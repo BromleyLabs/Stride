@@ -16,8 +16,6 @@ contract mortal {
 
     address m_owner = msg.sender;  /* Whoever deploys this contract */ 
    
-    //function mortal() public {m_owner = msg.sender; }
-
     function kill() public { if (msg.sender == m_owner) selfdestruct(m_owner); }
 }
 
@@ -25,10 +23,10 @@ contract RSKDepositContract is mortal {
 
     enum TxnStates {DEPOSITED, ACKNOWLEDGED}
 
-    struct ForwardTxn { /* from STBC -> ETBC */
+    struct ForwardTxn { /* from SBTC -> ETBC */
         uint txn_id;
         address user;
-        uint amount;  /* STBC */ 
+        uint amount;  /* SBTC */ 
         address eth_addr;  
         TxnStates state; 
         uint block_number; /* Assigned by Custodian */
@@ -43,8 +41,7 @@ contract RSKDepositContract is mortal {
     event Ack(uint txn_id, uint block_number);
 
     function add_custodian(address addr) public {
-        //require(msg.sender == m_owner, "Only owner can call this");  
-        require(msg.sender == m_owner);
+        require(msg.sender == m_owner, "Only owner can call this");  
         require(m_custodian == address(0), "Custodian already set");   
 
         m_custodian = addr;
@@ -55,12 +52,12 @@ contract RSKDepositContract is mortal {
         require(msg.sender != m_custodian, "A custodian should not call this"); 
 
         /* It is assumed that sbtc is ERC20 compliant and approved by user */ 
-        ERC20Interface token_contract = ERC20Interface(m_stbc_token_addr);
-        require(token_contract.transferFrom(msg.sender, address(this), stbc_amount)); 
-        m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, stbc_amount, 
+        ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
+        require(token_contract.transferFrom(msg.sender, address(this), sbtc_amount)); 
+        m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, 
                                         eth_addr, TxnStates.DEPOSITED, 0); 
 
-        emit Deposited(msg.sender, eth_addr, stbc_amount, m_txn_count); /* Custodian would watch this event */ 
+        emit Deposited(msg.sender, eth_addr, sbtc_amount, m_txn_count); /* Custodian would watch this event */ 
 
         m_txn_count += 1;
     }
@@ -68,10 +65,10 @@ contract RSKDepositContract is mortal {
     /* msg: 8 bytes of transaction id, 8 bytes of block number */ 
     function submit_ack(bytes16 ack_msg, bytes32 signature, uint8 v,
                          bytes32 r, bytes32 s) public { /* By custodian */
-        require(msg.sender == m_custodian);
+        require(msg.sender == m_custodian, "Only custodian can call this");
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(prefix, signature); 
-        require(ecrecover(prefixedHash, v, r, s) == m_custodian); /* Indeed signed by custodian */ 
+        require(ecrecover(prefixedHash, v, r, s) == m_custodian, "Not a custodian signed msg"); /* Indeed signed by custodian */ 
         
         /* TODO: parse ack_msg to get txn id and block number */
         uint txn_id = 0; /* TODO */ 
