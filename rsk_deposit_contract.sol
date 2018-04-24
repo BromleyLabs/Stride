@@ -1,0 +1,82 @@
+pragma solidity ^0.4.23;
+
+contract ERC20Interface {
+    function totalSupply() public constant returns (uint);
+    function balanceOf(address tokenOwner) public constant returns (uint balance);
+    function allowance(address tokenOwner, address spender) public constant returns (uint remaining);
+    function transfer(address to, uint tokens) public returns (bool success);
+    function approve(address spender, uint tokens) public returns (bool success);
+    function transferFrom(address from, address to, uint tokens) public returns (bool success);
+
+    event Transfer(address indexed from, address indexed to, uint tokens);
+    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
+}
+
+contract mortal {
+
+    address m_owner = msg.sender;  /* Whoever deploys this contract */ 
+   
+    //function mortal() public {m_owner = msg.sender; }
+
+    function kill() public { if (msg.sender == m_owner) selfdestruct(m_owner); }
+}
+
+contract RSKDepositContract is mortal {
+
+    enum TxnStates {DEPOSITED, ACKNOWLEDGED}
+
+    struct ForwardTxn { /* from STBC -> ETBC */
+        uint txn_id;
+        address user;
+        uint amount;  /* STBC */ 
+        address eth_addr;  
+        TxnStates state; 
+        uint block_number; /* Assigned by Custodian */
+    }
+
+    uint private m_txn_count = 0;
+    address public m_custodian; 
+    address constant m_sbtc_token_addr = 0x0025178B671B933B8CF7C25086C3408856C6DFC52C; /* TODO: dummy for now */ 
+    mapping (uint => ForwardTxn) public m_txns; 
+
+    event Deposited(address from, address to, uint amount, uint txn_id);
+    event Ack(uint txn_id, uint block_number);
+
+    function add_custodian(address addr) public {
+        //require(msg.sender == m_owner, "Only owner can call this");  
+        require(msg.sender == m_owner);
+        require(m_custodian == address(0), "Custodian already set");   
+
+        m_custodian = addr;
+    }
+
+    function deposit_sbtc(uint sbtc_amount, address eth_addr) public { /* By user */
+        require(m_custodian != address(0), "Custodian not set");   
+        require(msg.sender != m_custodian, "A custodian should not call this"); 
+
+        /* It is assumed that sbtc is ERC20 compliant and approved by user */ 
+        ERC20Interface token_contract = ERC20Interface(m_stbc_token_addr);
+        require(token_contract.transferFrom(msg.sender, address(this), stbc_amount)); 
+        m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, stbc_amount, 
+                                        eth_addr, TxnStates.DEPOSITED, 0); 
+
+        emit Deposited(msg.sender, eth_addr, stbc_amount, m_txn_count); /* Custodian would watch this event */ 
+
+        m_txn_count += 1;
+    }
+
+    /* msg: 8 bytes of transaction id, 8 bytes of block number */ 
+    function submit_ack(bytes16 ack_msg, bytes32 signature, uint8 v,
+                         bytes32 r, bytes32 s) public { /* By custodian */
+        require(msg.sender == m_custodian);
+        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHash = keccak256(prefix, signature); 
+        require(ecrecover(prefixedHash, v, r, s) == m_custodian); /* Indeed signed by custodian */ 
+        
+        /* TODO: parse ack_msg to get txn id and block number */
+        uint txn_id = 0; /* TODO */ 
+        uint block_number = 0; /* TODO */ 
+        m_txns[txn_id].state = TxnStates.ACKNOWLEDGED; 
+        emit Ack(txn_id, block_number);
+    }
+}
