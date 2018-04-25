@@ -38,7 +38,7 @@ contract RSKDepositContract is mortal {
 
     uint private m_txn_count = 0;
     address public m_custodian; 
-    address constant m_sbtc_token_addr = 0x0025178B671B933B8CF7C25086C3408856C6DFC52C; /* TODO: dummy for now */ 
+    address constant m_sbtc_token_addr = 0x25178B671b933b8cF7c25086C3408856c6dfC52C; /* TODO: dummy for now */ 
     mapping (uint => ForwardTxn) public m_txns; 
 
     event Deposited(address from, address to, uint amount, uint txn_id);
