@@ -23,13 +23,17 @@ contract RSKDepositContract is mortal {
 
     enum TxnStates {DEPOSITED, ACKNOWLEDGED}
 
-    struct ForwardTxn { /* from SBTC -> ETBC */
+    struct ForwardTxn { /* from SBTC -> EBTC */
         uint txn_id;
         address user;
         uint amount;  /* SBTC */ 
         address eth_addr;  
         TxnStates state; 
-        uint block_number; /* Assigned by Custodian */
+        string ack_msg; /* from custodian */
+        bytes32 ack_msg_sign; /* by custodian */
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
     }
 
     uint private m_txn_count = 0;
@@ -38,7 +42,7 @@ contract RSKDepositContract is mortal {
     mapping (uint => ForwardTxn) public m_txns; 
 
     event Deposited(address from, address to, uint amount, uint txn_id);
-    event Ack(uint txn_id, uint block_number);
+    event Ack(string json_msg, bytes32 signature, uint8 v, bytes32 r, bytes32 s);
 
     function add_custodian(address addr) public {
         require(msg.sender == m_owner, "Only owner can call this");  
@@ -51,29 +55,36 @@ contract RSKDepositContract is mortal {
         require(m_custodian != address(0), "Custodian not set");   
         require(msg.sender != m_custodian, "A custodian should not call this"); 
 
-        /* It is assumed that sbtc is ERC20 compliant and approved by user */ 
+        /* For now, it is assumed that SBTC is ERC20 compliant and has been approved by user */ 
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
         require(token_contract.transferFrom(msg.sender, address(this), sbtc_amount)); 
-        m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, 
-                                        eth_addr, TxnStates.DEPOSITED, 0); 
 
-        emit Deposited(msg.sender, eth_addr, sbtc_amount, m_txn_count); /* Custodian would watch this event */ 
+        m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, 
+                                        eth_addr, TxnStates.DEPOSITED, "", 0, 0, 0, 0); 
+
+        emit Deposited(msg.sender, eth_addr, sbtc_amount, m_txn_count); /* Custodian watches this event */ 
 
         m_txn_count += 1;
     }
 
-    /* msg: 8 bytes of transaction id, 8 bytes of block number */ 
-    function submit_ack(bytes16 ack_msg, bytes32 signature, uint8 v,
-                         bytes32 r, bytes32 s) public { /* By custodian */
+    /* json_msg: "{fromSbtc: <>, toEthr: <>, amount : <>, blocNumber: <>}" 
+       json_msg is signed as signature */
+ 
+    function submit_ack(uint txn_id, string json_msg, bytes32 signature, 
+                        uint8 v, bytes32 r, bytes32 s) public { /* Sent by custodian */
         require(msg.sender == m_custodian, "Only custodian can call this");
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(prefix, signature); 
-        require(ecrecover(prefixedHash, v, r, s) == m_custodian, "Not a custodian signed msg"); /* Indeed signed by custodian */ 
-        
-        /* TODO: parse ack_msg to get txn id and block number */
-        uint txn_id = 0; /* TODO */ 
-        uint block_number = 0; /* TODO */ 
+        require(ecrecover(prefixedHash, v, r, s) == m_custodian, "Not a custodian signed msg"); 
+         
+        m_txns[txn_id].ack_msg = json_msg;
+        m_txns[txn_id].ack_msg_sign = signature;
+        m_txns[txn_id].v = v;
+        m_txns[txn_id].r = r;
+        m_txns[txn_id].s = s;
         m_txns[txn_id].state = TxnStates.ACKNOWLEDGED; 
-        emit Ack(txn_id, block_number);
+
+        emit Ack(json_msg, signature, v, r, s); /* User watches this event */
+
     }
 }
