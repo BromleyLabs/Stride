@@ -55,9 +55,11 @@ contract RSKDepositContract is mortal {
         require(m_custodian != address(0), "Custodian not set");   
         require(msg.sender != m_custodian, "A custodian should not call this"); 
 
-        /* For now, it is assumed that SBTC is ERC20 compliant and has been approved by user */ 
+        /* For now, it is assumed that SBTC is ERC20 compliant and user has approved
+           this contract address to transfer tokens from user's account to custodian's
+           account */
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
-        require(token_contract.transferFrom(msg.sender, address(this), sbtc_amount)); 
+        require(token_contract.transferFrom(msg.sender, m_custodian, sbtc_amount)); 
 
         m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, 
                                         eth_addr, TxnStates.DEPOSITED, "", 0, 0, 0, 0); 
