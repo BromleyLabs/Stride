@@ -29,7 +29,7 @@ contract RSKDepositContract is mortal {
         uint amount;  /* SBTC */ 
         address eth_addr;  
         TxnStates state; 
-        string ack_msg; /* from custodian */
+        bytes32 ack_msg; /* TODO: has to be longer. from custodian */
         bytes32 ack_msg_sign; /* by custodian */
         uint8 v;
         bytes32 r;
@@ -42,7 +42,7 @@ contract RSKDepositContract is mortal {
     mapping (uint => ForwardTxn) public m_txns; 
 
     event Deposited(address from, address to, uint amount, uint txn_id);
-    event Ack(string json_msg, bytes32 signature, uint8 v, bytes32 r, bytes32 s);
+    event Ack(bytes32 json_msg, bytes32 signature, uint8 v, bytes32 r, bytes32 s);
 
     function add_custodian(address addr) public {
         require(msg.sender == m_owner, "Only owner can call this");  
@@ -72,7 +72,7 @@ contract RSKDepositContract is mortal {
     /* json_msg: "{fromSbtc: <>, toEthr: <>, amount : <>, blocNumber: <>}" 
        json_msg is signed as signature */
  
-    function submit_ack(uint txn_id, string json_msg, bytes32 signature, 
+    function submit_ack(uint txn_id, bytes32 json_msg, bytes32 signature, 
                         uint8 v, bytes32 r, bytes32 s) public { /* Sent by custodian */
         require(msg.sender == m_custodian, "Only custodian can call this");
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
