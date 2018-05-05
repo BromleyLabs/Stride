@@ -61,17 +61,19 @@ contract RSKDepositContract is mortal {
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
         require(token_contract.transferFrom(msg.sender, m_custodian, sbtc_amount)); 
 
-        m_txns[m_txn_count] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, 
+        uint txn_id = m_txn_count; /* Unique id */
+        m_txn_count += 1;
+
+        m_txns[txn_id] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, 
                                         eth_addr, TxnStates.DEPOSITED, "", 0, 0, 0, 0); 
 
-        emit Deposited(msg.sender, eth_addr, sbtc_amount, m_txn_count); /* Custodian watches this event */ 
+        emit Deposited(msg.sender, eth_addr, sbtc_amount, txn_id); /* Custodian watches this event */ 
 
-        m_txn_count += 1;
     }
 
-    /* json_msg: "{fromSbtc: <>, toEthr: <>, amount : <>, blocNumber: <>}" 
-       json_msg is signed as signature */
- 
+    /* ack_msg: "{fromSbtc: <>, toEthr: <>, amount : <>, blocNumber: <>}"
+       txn_id is what custodian reads from Deposited event */
+    
     function submit_ack(uint txn_id, bytes32 ack_msg, bytes32 ack_msg_hash, 
                         uint8 v, bytes32 r, bytes32 s) public { /* Sent by custodian */
         require(msg.sender == m_custodian, "Only custodian can call this");
