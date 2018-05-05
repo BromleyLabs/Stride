@@ -30,8 +30,8 @@ contract RSKDepositContract is mortal {
         address eth_addr;  
         TxnStates state; 
         bytes32 ack_msg; /* TODO: has to be longer. from custodian */
-        bytes32 ack_msg_sign; /* by custodian */
-        uint8 v;
+        bytes32 ack_msg_hash; 
+        uint8 v; /* Signed by custodian */
         bytes32 r;
         bytes32 s;
     }
@@ -72,21 +72,20 @@ contract RSKDepositContract is mortal {
     /* json_msg: "{fromSbtc: <>, toEthr: <>, amount : <>, blocNumber: <>}" 
        json_msg is signed as signature */
  
-    function submit_ack(uint txn_id, bytes32 json_msg, bytes32 signature, 
+    function submit_ack(uint txn_id, bytes32 ack_msg, bytes32 ack_msg_hash, 
                         uint8 v, bytes32 r, bytes32 s) public { /* Sent by custodian */
         require(msg.sender == m_custodian, "Only custodian can call this");
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 prefixedHash = keccak256(prefix, signature); 
+        bytes32 prefixedHash = keccak256(prefix, ack_msg_hash) ; 
         require(ecrecover(prefixedHash, v, r, s) == m_custodian, "Not a custodian signed msg"); 
          
-        m_txns[txn_id].ack_msg = json_msg;
-        m_txns[txn_id].ack_msg_sign = signature;
+        m_txns[txn_id].ack_msg = ack_msg; 
+        m_txns[txn_id].ack_msg_hash = ack_msg_hash; 
         m_txns[txn_id].v = v;
         m_txns[txn_id].r = r;
         m_txns[txn_id].s = s;
         m_txns[txn_id].state = TxnStates.ACKNOWLEDGED; 
 
-        emit Ack(json_msg, signature, v, r, s); /* User watches this event */
-
+        emit Ack(ack_msg, ack_msg_hash, v, r, s); /* User watches this event */
     }
 }
