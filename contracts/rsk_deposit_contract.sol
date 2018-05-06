@@ -26,10 +26,10 @@ contract RSKDepositContract is mortal {
     struct ForwardTxn { /* from SBTC -> EBTC */
         uint txn_id;
         address user;
-        uint sbtc_amount;  /* SBTC */ 
-        address eth_addr;  
+        uint sbtc_amount;  
+        address eth_addr; /* Where EBTC needs to be transferred */ 
         TxnStates state; 
-        bytes ack_msg; /* TODO: has to be longer. from custodian */
+        bytes ack_msg; /* From custodian */ 
         bytes32 ack_msg_hash; 
         uint8 v; /* Signed by custodian */
         bytes32 r;
@@ -99,6 +99,9 @@ contract RSKDepositContract is mortal {
         uint offset = 0;
         uint txn_id = uint(get_bytes(ack_msg, 32, offset));
         require(m_txns[txn_id].txn_id != 0, "Txn id does not exist");
+
+        /* Avoid repeated ack message */
+        require(m_txns[txn_id].state == TxnStates.DEPOSITED, "Txn not in DEPOSITED state");
         
         offset += 32;
         address user = address(get_bytes(ack_msg, 20, offset));
@@ -112,7 +115,7 @@ contract RSKDepositContract is mortal {
         uint sbtc_amount = uint(get_bytes(ack_msg, 32, offset));
         require(sbtc_amount == m_txns[txn_id].sbtc_amount, "SBTC amount does not match");
 
-        /* Save the ack info for further use by custodian */
+        /* Save the ack info for further use by this contract */
         m_txns[txn_id].ack_msg = ack_msg;  /* TODO: Check copy/reference during assignment */
         m_txns[txn_id].ack_msg_hash = ack_msg_hash; 
         m_txns[txn_id].v = v;
