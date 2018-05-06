@@ -26,7 +26,7 @@ contract RSKDepositContract is mortal {
     struct ForwardTxn { /* from SBTC -> EBTC */
         uint txn_id;
         address user;
-        uint stbc_amount;  /* SBTC */ 
+        uint sbtc_amount;  /* SBTC */ 
         address eth_addr;  
         TxnStates state; 
         bytes ack_msg; /* TODO: has to be longer. from custodian */
@@ -74,18 +74,18 @@ contract RSKDepositContract is mortal {
     }
 
     /* Extract bytes32 from a byte array given an offset */
-    function to_bytes32(bytes b, uint offset) private pure returns (bytes32) {
+    function get_bytes(bytes b, uint nbytes, uint offset) private pure returns (bytes32) {
         bytes32 out;
 
-        for (uint i = 0; i < 32; i++) 
+        for (uint i = 0; i < nbytes; i++) 
             out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
 
         return out;
     }
 
-    /* ack_msg byte array: tx_id(32), fromSbtc(32), toEthr(32), amount(32), blocNumber(32)
+    /* ack_msg byte array: tx_id(32), fromSbtc(20), toEthr(20), amount(32), blocNumber(32)
        txn_id is what custodian reads from Deposited event */
-    /* TODO: ack_msg can be packed better to save memory if it really matters */ 
+    /* TODO: ack_msg can be packed better to save memory, if it really matters */ 
     function submit_ack(bytes ack_msg, bytes32 ack_msg_hash, 
                         uint8 v, bytes32 r, bytes32 s) public { /* Sent by custodian */
         require(msg.sender == m_custodian, "Only custodian can call this");
@@ -95,11 +95,21 @@ contract RSKDepositContract is mortal {
         require(ack_msg_hash == keccak256(ack_msg), "Ack msg hash does not match"); 
        
         /* TODO: Verify if custodian has sent correct information for this transaction id */
-        uint txn_id = uint(to_bytes32(ack_msg, 0));
+        uint offset = 0;
+        uint txn_id = uint(get_bytes(ack_msg, 32, offset));
         require(m_txns[txn_id].txn_id != 0, "Txn id does not exist");
         
-        address user = address(to_bytes32(ack_msg, 32));
+        offset += 32;
+        address user = address(get_bytes(ack_msg, 20, offset));
         require(user == m_txns[txn_id].user);
+
+        offset += 20;
+        address eth_addr = address(get_bytes(ack_msg, 20, offset));
+        require(eth_addr == m_txns[txn_id].eth_addr);
+
+        offset += 20;
+        uint sbtc_amount = uint(get_bytes(ack_msg, 32, offset));
+        require(sbtc_amount == m_txns[txn_id].sbtc_amount);
 
         m_txns[txn_id].ack_msg = ack_msg;  /* TODO: Check copy/reference during assignment */
         m_txns[txn_id].ack_msg_hash = ack_msg_hash; 
