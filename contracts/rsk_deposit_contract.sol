@@ -83,34 +83,36 @@ contract RSKDepositContract is mortal {
         return out;
     }
 
-    /* ack_msg byte array: tx_id(32), fromSbtc(20), toEthr(20), amount(32), blocNumber(32)
-       txn_id is what custodian reads from Deposited event */
-    /* TODO: ack_msg can be packed better to save memory, if it really matters */ 
+    /* This function is called by custodian after receiving Deposited event.
+       ack_msg byte array: txn_id(32), user(20), ethr_addr(20), sbtc_amount(32), block_number(32)
+       TODO: ack_msg can be packed better to save memory, if it really matters. */ 
+
     function submit_ack(bytes ack_msg, bytes32 ack_msg_hash, 
-                        uint8 v, bytes32 r, bytes32 s) public { /* Sent by custodian */
+                        uint8 v, bytes32 r, bytes32 s) public {
         require(msg.sender == m_custodian, "Only custodian can call this");
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(prefix, ack_msg_hash) ; 
         require(ecrecover(prefixedHash, v, r, s) == m_custodian, "Not a custodian signed msg"); 
         require(ack_msg_hash == keccak256(ack_msg), "Ack msg hash does not match"); 
        
-        /* TODO: Verify if custodian has sent correct information for this transaction id */
+        /* Verify if custodian has sent correct information for this transaction id */
         uint offset = 0;
         uint txn_id = uint(get_bytes(ack_msg, 32, offset));
         require(m_txns[txn_id].txn_id != 0, "Txn id does not exist");
         
         offset += 32;
         address user = address(get_bytes(ack_msg, 20, offset));
-        require(user == m_txns[txn_id].user);
+        require(user == m_txns[txn_id].user, "User does not match");
 
         offset += 20;
         address eth_addr = address(get_bytes(ack_msg, 20, offset));
-        require(eth_addr == m_txns[txn_id].eth_addr);
+        require(eth_addr == m_txns[txn_id].eth_addr, "Ethr address does not match");
 
         offset += 20;
         uint sbtc_amount = uint(get_bytes(ack_msg, 32, offset));
-        require(sbtc_amount == m_txns[txn_id].sbtc_amount);
+        require(sbtc_amount == m_txns[txn_id].sbtc_amount, "SBTC amount does not match");
 
+        /* Save the ack info for further use by custodian */
         m_txns[txn_id].ack_msg = ack_msg;  /* TODO: Check copy/reference during assignment */
         m_txns[txn_id].ack_msg_hash = ack_msg_hash; 
         m_txns[txn_id].v = v;
