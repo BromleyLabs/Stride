@@ -1,5 +1,6 @@
 from web3.auto import w3
 from hexbytes import HexBytes
+import time
 
 def checksum(addr):
     if not w3.isChecksumAddress(addr):
@@ -19,3 +20,14 @@ def sign_bytearray(barray, account_adr):
     h_hash = w3.toBytes(hexstr = h_hash.hex())
     return h_hash, v_int, r, s
 
+def wait_to_be_mined(txn_hash):
+    while 1:
+        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+        if tx_receipt['blockNumber'] is not None:
+            print('Transaction mined')
+            print(tx_receipt)  
+            break
+        time.sleep(15) 
+
+ 
+    
