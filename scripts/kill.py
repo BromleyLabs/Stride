@@ -3,13 +3,7 @@ from web3.contract import ConciseContract
 from hexbytes import HexBytes
 import sys
 import os
-
-CONTRACT_NAME = 'RSKDepositContract'
-ABI_FILE = os.path.join('../contracts/target/', CONTRACT_NAME + '.abi')
-
-GAS = 4000000 
-GAS_PRICE = 10000000000
-OWNER = w3.eth.accounts[0] 
+from common import *
 
 def main():
     if len(sys.argv) != 2:

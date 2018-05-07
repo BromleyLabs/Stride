@@ -3,12 +3,7 @@ from hexbytes import HexBytes
 from solc import compile_source
 import os
 from utils import *
-
-CONTRACT_FILE = '../contracts/rsk_deposit_contract.sol'
-CONTRACT_NAME = 'RSKDepositContract'
-OWNER = w3.eth.accounts[0]
-GAS = 4000000 
-GAS_PRICE = 10000000000
+from common import *
 
 # This a separate function to be called only once.
 def deploy(contract_file, contract_name):

@@ -20,14 +20,25 @@ def sign_bytearray(barray, account_adr):
     h_hash = w3.toBytes(hexstr = h_hash.hex())
     return h_hash, v_int, r, s
 
-def wait_to_be_mined(txn_hash):
+def wait_to_be_mined(tx_hash):
+    print('Tx hash: %s' % HexBytes(tx_hash).hex())
+    print('Waiting for transaction to get mined..')
     while 1:
-        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+        tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
+        print(tx_receipt)
+        if tx_receipt is None:
+            time.sleep(10)
+            continue
+
+        if tx_receipt['status'] != 1:
+            print('ERROR in transaction')
+            break 
+
         if tx_receipt['blockNumber'] is not None:
             print('Transaction mined')
-            print(tx_receipt)  
             break
-        time.sleep(15) 
+        time.sleep(10) 
+    print(tx_receipt)
 
  
     
