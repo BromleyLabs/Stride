@@ -55,7 +55,7 @@ contract RSKDepositContract is mortal {
         m_custodian = addr;
     }
 
-    function set_penality(uint amount) public {
+    function set_penalty(uint amount) public {
         require(msg.sender == m_owner, "Only owner can set penalty");  
         m_penalty = amount;
     }
@@ -80,13 +80,15 @@ contract RSKDepositContract is mortal {
         require(m_custodian != address(0), "Custodian not set");   
         require(msg.sender != m_custodian, "A custodian should not call this"); 
 
-        /* First transfer penalty amount from custodian as security deposit */ 
+        /* First transfer penalty amount from custodian as security deposit. It's assumed
+           that custodian has approved this third-party transfer */ 
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
         require(token_contract.transferFrom(m_custodian, this, m_penalty)); 
         /* TODO: User keeps getting charged for the above failed transaction if
            custodian does not have enough funds. */
 
         /* Now transfer user's amount */
+        /* TODO: If the below fails, the earlier penalty transfer should also be reverted back */
         require(token_contract.transferFrom(msg.sender, this, sbtc_amount)); 
 
         uint txn_id = m_txn_count; /* Unique id */
