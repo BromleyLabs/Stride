@@ -19,7 +19,7 @@ contract mortal {
 
 contract RSKDepositContract is mortal {
 
-    enum TxnStates {DEPOSITED, ACKNOWLEDGED}
+    enum TxnStates {UNINITIALIZED, DEPOSITED, ACKNOWLEDGED, REVERTED}
 
     struct ForwardTxn { /* from SBTC -> EBTC */
         uint txn_id;
@@ -131,6 +131,8 @@ contract RSKDepositContract is mortal {
         offset += 20;
         uint sbtc_amount = uint(get_bytes(ack_msg, 32, offset));
         require(sbtc_amount == m_txns[txn_id].sbtc_amount, "SBTC amount does not match");
+  
+        /* TODO: Check if ack has come too late, i.e. block number limit has been exceeded */
 
         /* Save the ack info for further use by this contract */
         m_txns[txn_id].ack_msg = ack_msg;  /* TODO: Check copy/reference during assignment */
@@ -140,12 +142,12 @@ contract RSKDepositContract is mortal {
         m_txns[txn_id].s = s;
         m_txns[txn_id].state = TxnStates.ACKNOWLEDGED; 
 
-        emit Ack(ack_msg, ack_msg_hash, v, r, s); /* User watches this event and verifies info is correct */
-        /* TODO: What does user do if the info here is not correct? */
-
         /* Return back penalty amount to custodian */
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
         require(token_contract.transferFrom(this, m_custodian, m_penalty)); /* TODO: Who pays for this transaction? */
+
+        emit Ack(ack_msg, ack_msg_hash, v, r, s); /* User watches this event and verifies info is correct */
+        /* TODO: What does user do if the info here is not correct? */
     }
 
     /* This function is called by user if user does not receive Ack event after m_max_ack_delay blocks. */
@@ -160,6 +162,7 @@ contract RSKDepositContract is mortal {
         require(token_contract.transferFrom(this, m_txns[txn_id].user,
                       m_txns[txn_id].sbtc_amount + m_penalty)); /* TODO: Who pays for this transaction? */
 
+        m_txns[txn_id].state = TxnStates.REVERTED;
         emit ChallengeAccepted(txn_id);
     }
 }
