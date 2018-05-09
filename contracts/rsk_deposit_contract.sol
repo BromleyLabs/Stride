@@ -65,11 +65,18 @@ contract RSKDepositContract is mortal {
         m_max_ack_delay = nblocks; 
     }
 
-    /* Utility function to extract bytes from a byte array given an offset and returns as bytes32 */
-    function get_bytes(bytes b, uint nbytes, uint offset) private pure returns (bytes32) {
+    /* Utility function to extract bytes from a byte array given an offset and returns as bytes32, bytes20 */
+    function get_bytes32(bytes b, uint offset) private pure returns (bytes32) {
         bytes32 out;
-        for (uint i = 0; i < nbytes; i++) 
-            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8);
+        for (uint i = 0; i < 32; i++) 
+            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8); /* CAUTION: Beware of left/right padding from bytes->bytes32  */
+        return out;
+    }
+
+    function get_bytes20(bytes b, uint offset) private pure returns (bytes20) {
+        bytes20 out;
+        for (uint i = 0; i < 20; i++) 
+            out |= bytes20(b[offset + i] & 0xFF) >> (i * 8); 
         return out;
     }
 
@@ -93,7 +100,7 @@ contract RSKDepositContract is mortal {
 
         uint txn_id = m_txn_count; /* Unique id */
 
-        m_txns[txn_id] = ForwardTxn(m_txn_count, msg.sender, sbtc_amount, eth_addr, 
+        m_txns[txn_id] = ForwardTxn(txn_id, msg.sender, sbtc_amount, eth_addr, 
                                     TxnStates.DEPOSITED, block.number, "", 0, 0, 0, 0); 
         m_txn_count += 1;
 
@@ -114,22 +121,22 @@ contract RSKDepositContract is mortal {
        
         /* Verify if custodian has sent correct information for this transaction id */
         uint offset = 0;
-        uint txn_id = uint(get_bytes(ack_msg, 32, offset));
+        uint txn_id = uint(get_bytes32(ack_msg, offset));
         require(m_txns[txn_id].txn_id != 0, "Txn id does not exist");
 
         /* Avoid repeated ack message for the same txn_id */
         require(m_txns[txn_id].state == TxnStates.DEPOSITED, "Txn not in DEPOSITED state");
         
         offset += 32;
-        address user = address(get_bytes(ack_msg, 20, offset));
+        address user = address(get_bytes20(ack_msg, offset));
         require(user == m_txns[txn_id].user, "User does not match");
 
         offset += 20;
-        address eth_addr = address(get_bytes(ack_msg, 20, offset));
+        address eth_addr = address(get_bytes20(ack_msg, offset));
         require(eth_addr == m_txns[txn_id].eth_addr, "Ethr address does not match");
 
         offset += 20;
-        uint sbtc_amount = uint(get_bytes(ack_msg, 32, offset));
+        uint sbtc_amount = uint(get_bytes32(ack_msg, offset));
         require(sbtc_amount == m_txns[txn_id].sbtc_amount, "SBTC amount does not match");
   
         /* TODO: Check if ack has come too late, i.e. block number limit has been exceeded */
@@ -144,7 +151,7 @@ contract RSKDepositContract is mortal {
 
         /* Return back penalty amount to custodian */
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
-        require(token_contract.transferFrom(this, m_custodian, m_penalty)); /* TODO: Who pays for this transaction? */
+        require(token_contract.transferFrom(this, m_custodian, m_penalty)); 
 
         emit Ack(ack_msg, ack_msg_hash, v, r, s); /* User watches this event and verifies info is correct */
         /* TODO: What does user do if the info here is not correct? */
