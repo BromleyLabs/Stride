@@ -18,11 +18,7 @@ def deploy(contract_file, contract_name):
                                              'gasPrice' : GAS_PRICE}) 
     print('Tx hash: %s' % HexBytes(tx_hash).hex())
 
-    tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
-    print(tx_receipt) 
-    print('')
-    print('Waiting for transaction to get mined ..')
-    wait_to_be_mined(txn_hash)
+    wait_to_be_mined(tx_hash)
     
 
 def main():

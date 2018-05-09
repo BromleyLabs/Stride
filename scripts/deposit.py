@@ -4,6 +4,7 @@ from web3.contract import ConciseContract
 import os
 from utils import *
 from common import *
+from approve import approve
 
 # This class to be used once contract is deployed
 class RSKDepositContract:
@@ -14,15 +15,6 @@ class RSKDepositContract:
         self.contract = w3.eth.contract(abi = abi, address = self.addr)
         self.concise = ConciseContract(self.contract)
 
-    def kill(self):
-        
-        tx_hash = self.contract.functions.kill().transact({'from' : OWNER, 
-                                           'gas' : GAS, 'gasPrice' : GAS_PRICE})
-        print('Tx hash: %s' % HexBytes(tx_hash).hex())
-    
-        tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
-        print (tx_receipt) 
-
     def add_custodian(self, custodian_addr, owner_addr):
         custodian_addr = checksum(custodian_addr)
         owner_addr = checksum(owner_addr)
@@ -31,8 +23,8 @@ class RSKDepositContract:
                                     'gas' : GAS, 'gasPrice' : GAS_PRICE}) 
         return tx_hash
 
-    def set_penality(self, wei, owner_addr): 
-        tx_hash = self.concise.set_penality(wei, 
+    def set_penalty(self, wei, owner_addr): 
+        tx_hash = self.concise.set_penalty(wei, 
                                     transact = {'from' : owner_addr, 
                                     'gas' : GAS, 'gasPrice' : GAS_PRICE}) 
         return tx_hash 
@@ -43,10 +35,19 @@ class RSKDepositContract:
                                      'gas' : GAS, 'gasPrice' : GAS_PRICE}) 
         return tx_hash                                         
 
-    def submit_ack(self, txn_id, ack_msg, account_addr):
-        # ack_msg is bytearray of 32 bytes, assumed for now
-        h_hash, v_int, r, s = sign_bytearray(ack_msg, account_addr)
-        tx_hash = self.concise.submit_ack(txn_id, ack_msg, h_hash, v_int, r, s).transact({'from' : account_addr, 'gas' : GAS, 'gasPrice' : GAS_PRICE}) 
+    def submit_ack(self, txn_id, user, ethr_addr, sbtc_amount, 
+                   block_number, custodian):
+        ack_msg = bytes() # Empty
+        ack_msg += txn_id.to_bytes(32, 'big') 
+        ack_msg += bytes(HexBytes(user)) # 20 bytes
+        ack_msg += bytes(HexBytes(ethr_addr)) # 20 bytes
+        ack_msg += sbtc_amount.to_bytes(32, 'big') 
+        ack_msg += block_number.to_bytes(32, 'big') 
+        ack_msg_hash, v_int, r, s = sign_bytearray(ack_msg, custodian)
+
+        tx_hash = self.concise.submit_ack(ack_msg, ack_msg_hash, v_int, r, s, 
+                                         transact = {'from' : custodian, 
+                                         'gas' : GAS, 'gasPrice' : GAS_PRICE}) 
         return tx_hash                                         
 
     def no_ack_challenge(self, txn_id, user_addr):
@@ -58,12 +59,23 @@ class RSKDepositContract:
 
 def main():
     rsk = RSKDepositContract(CONTRACT_ADDR, ABI_FILE)
-    #ack_msg = bytes(32)
-    #rsk.submit_ack(0, ack_msg, w3.eth.accounts[2])
-    #tx_hash = rsk.add_custodian(w3.eth.accounts[2], w3.eth.accounts[0]) 
-    #tx_hash = rsk.set_penality(int(0.0001 * 10**18), w3.eth.accounts[0])
-    #tx_hash = rsk.deposit_sbtc(int(0.001 * 10**18), USER, ETH_ADDR) 
-    tx_hash = rsk.no_ack_challenge(1, USER)
+    '''
+    tx_hash = rsk.add_custodian(CUSTODIAN, OWNER)
+    wait_to_be_mined(tx_hash)
+
+    tx_hash = rsk.set_penalty(int(0.0001 * 10**18), w3.eth.accounts[0])
+    wait_to_be_mined(tx_hash)
+
+    approve()
+
+    tx_hash = rsk.deposit_sbtc(int(0.001 * 10**18), USER, ETH_ADDR) 
+    wait_to_be_mined(tx_hash)
+
+    '''
+    #tx_hash = rsk.no_ack_challenge(1, USER)
+    
+    tx_hash = rsk.submit_ack(1, USER, ETH_ADDR, int(0.001 * 10**18),  
+                      w3.eth.blockNumber + 200, CUSTODIAN) 
     wait_to_be_mined(tx_hash)
 
 if __name__== '__main__':

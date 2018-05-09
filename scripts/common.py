@@ -1,7 +1,7 @@
 from web3.auto import w3
 import os
 
-CONTRACT_ADDR = '0x486E800B7aBbb02De65cC670A44162f69bbA5418' 
+CONTRACT_ADDR = '0x864e8f0e93BCC99Fd25b935A90D5f69E0C026df2' 
 CONTRACT_FILE = '../contracts/rsk_deposit_contract.sol'
 CONTRACT_NAME = 'RSKDepositContract'
 CONTRACT_FILE = '../contracts/rsk_deposit_contract.sol'
