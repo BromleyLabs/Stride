@@ -28,6 +28,7 @@ contract UserRSKContract is mortal {
     address constant m_sbtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
 
     event UserTransactionCreated(uint txn_id, address user, address custodian);
+    event UserTransferred(uint txn_id);
     event CustodianExecutionSuccess(uint txn_id, string pwd_str); 
 
     function create_transaction(uint txn_id, address custodian, bytes32 custodian_pwd_hash, 
@@ -40,6 +41,16 @@ contract UserRSKContract is mortal {
         emit UserTransactionCreated(txn_id, msg.sender, custodian);
     }
 
+    function transfer_to_contract(uint txn_id) public { /* To be called by user */
+        /* Assumed user has approved movement of sbtc tokens from his account to this contract */
+        require(msg.sender == m_txns[txn_id].user);
+        require(m_txns[txn_id].txn_id == txn_id, "Transaction does not exist"); 
+     
+        ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
+        require(token_contract.transferFrom(m_txns[txn_id].user, this, m_txns[txn_id].sbtc_amount)); 
+
+        emit UserTransferred(txn_id);
+    }
 
     function execute(uint txn_id, string pwd_str) public { /* Called by custodian */
         require(msg.sender == m_txns[txn_id].custodian, "Only custodian can call this"); 
