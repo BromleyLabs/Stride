@@ -14,14 +14,15 @@ contract UserRSKContract is mortal {
     enum TxnStates {CREATED, EXECUTED}
 
     struct ForwardTxn {
-        address user;
+        address user; /* RSK address */
         uint txn_id; 
-        address custodian; 
+        address custodian;  /* Eth address */
         bytes32 custodian_pwd_hash; /* Custodian password hash */
         uint timeout_interval; /* Blocks. Arbitary */ 
         uint creation_block; 
         uint sbtc_amount;
         TxnStates state;
+        /*TODO: Add Custodian's RSK address */ 
     } 
 
     mapping (uint => ForwardTxn) public m_txns; 

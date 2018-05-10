@@ -14,14 +14,15 @@ contract CustodianEthContract is mortal {
     enum TxnStates {CREATED, EXECUTED}
 
     struct ForwardTxn {
-        address custodian; 
+        address custodian;  /* Eth address */
         uint txn_id; 
-        address user;
+        address user; /* RSK address */
         bytes32 custodian_pwd_hash; /* Custodian password hash */
         uint timeout_interval; /* Blocks. Arbitary */ 
         uint creation_block; 
         uint ebtc_amount;
         TxnStates state;
+        /* TODO: add user's Eth address */ 
     } 
 
     mapping (uint => ForwardTxn) public m_txns; 
