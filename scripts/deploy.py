@@ -2,8 +2,10 @@ from web3.auto import w3
 from hexbytes import HexBytes
 from solc import compile_source
 import os
+import sys
 from utils import *
 from common import *
+
 
 # This a separate function to be called only once.
 def deploy(contract_name):
@@ -16,16 +18,14 @@ def deploy(contract_name):
     
     tx_hash = contract.deploy(transaction = {'from' : OWNER, 'gas' : GAS, 
                                              'gasPrice' : GAS_PRICE}) 
-    print('Tx hash: %s' % HexBytes(tx_hash).hex())
-
     wait_to_be_mined(tx_hash)
     
 
 def main():
     if len(sys.argv) != 2:
-        print 'Usage: python deploy.py <contract name>' 
+        print('Usage: python deploy.py <contract name>')
         exit(0)
-    deploy(contract_name)
+    deploy(sys.argv[1])
 
 if __name__== '__main__':
     main()

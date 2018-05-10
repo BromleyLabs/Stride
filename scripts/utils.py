@@ -21,8 +21,8 @@ def sign_bytearray(barray, account_adr):
     return h_hash, v_int, r, s
 
 def wait_to_be_mined(tx_hash):
-    print('Tx hash: %s' % HexBytes(tx_hash).hex())
-    print('Waiting for transaction to get mined..')
+    print('Tx hash: %s\n' % HexBytes(tx_hash).hex())
+    print('Waiting for transaction to get mined..\n')
     first = True 
     while 1:
         tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
