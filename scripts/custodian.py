@@ -15,19 +15,20 @@ def generate_random_pwd():
 def main():
     contract = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE)
     pwd_hash =  HexBytes('0x93f0218b357b9256799540fe638f53f9ab92be1e0457d42c7470c3bd3140d393')
-    exit(0)
     txn_id = 1
     ebtc_amount = int(0.001 * 1e18) 
-    tx_receipt = contract.create_transaction(txn_id, CUSTODIAN, USER, 
-                                             pwd_hash, 200, ebtc_amount) 
+    #tx_receipt = contract.create_transaction(txn_id, CUSTODIAN, USER, 
+    #                                         pwd_hash, 200, ebtc_amount) 
     # TODO: Next watch for UserTransactionCreated event on RSK.
     # TODO: Check the if the transaction contents are ok 
 
-    tx_receipt = erc20_approve(WETH_ADDR, CUSTODIAN, CUSTODIAN_CONTRACT_ADDR, 
-                               int(10.0 * 1e18))
+    #print('Approving..')
+    #tx_receipt = erc20_approve(WETH_ADDR, CUSTODIAN, CUSTODIAN_CONTRACT_ADDR, 
+    #                           int(10.0 * 1e18), GAS, GAS_PRICE)
 
-    tx_receipt = contract.transfer_to_contract(txn_id, CUSTODIAN) 
- 
+    #print('Transferring..')
+    #tx_receipt = contract.transfer_to_contract(txn_id, CUSTODIAN) 
+
     # TODO: Custodian watches UserTransferred event on RSK
     
     pwd_str = 'CAMX' 

@@ -1,5 +1,6 @@
 from web3.auto import w3
 from hexbytes import HexBytes
+from web3.contract import ConciseContract
 import time
 
 def checksum(addr):
@@ -49,12 +50,11 @@ def wait_to_be_mined(tx_hash):
     return tx_receipt
 
     
-def erc20_approve(erc20_address, from_addr, to_addr, amount):
+def erc20_approve(erc20_address, from_addr, to_addr, amount, gas, gas_price):
     erc20_abi = open('erc20.abi', 'rt').read() 
-    erc20_address = WETH_ADDR 
     erc20 = w3.eth.contract(abi = erc20_abi, address = erc20_address) 
     concise = ConciseContract(erc20)
-    tx_hash = concise.approve(CONTRACT_ADDR, amount,
-                            transact = {'from': from_addr, 'gas': GAS, 
-                                        'gasPrice': GAS_PRICE}) 
+    tx_hash = concise.approve(to_addr, amount,
+                            transact = {'from': from_addr, 'gas': gas, 
+                                        'gasPrice': gas_price}) 
     return wait_to_be_mined(tx_hash)
