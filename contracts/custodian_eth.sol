@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-/* User side contract on RSK for Atomic Swap */
+/* Custodian side contract on Ethereum for Atomic Swap */
 
 import "erc20.sol";
 
@@ -9,56 +9,56 @@ contract mortal {
     function kill() public { if (msg.sender == m_owner) selfdestruct(m_owner); }
 }
 
-contract UserRSKContract is mortal {
+contract CustodianEthContract is mortal {
 
     enum TxnStates {CREATED, EXECUTED}
 
     struct ForwardTxn {
-        address user;
-        bytes32 txn_id; 
         address custodian; 
+        bytes32 txn_id; 
+        address user;
         bytes32 custodian_pwd_hash; /* Custodian password hash */
         uint timeout_interval; /* Blocks. Arbitary */ 
         uint creation_block; 
-        uint sbtc_amount;
+        uint ebtc_amount;
         TxnStates state;
     } 
 
     mapping (bytes32 => ForwardTxn) public m_txns; 
-    address constant m_sbtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
+    address constant m_ebtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
 
-    event UserTransactionCreated(bytes32 txn_id, address user, address custodian);
-    event CustodianExecutionSuccess(bytes32 txn_id, bytes pwd_str); 
+    event CustodianTransactionCreated(bytes32 txn_id, address custodian, address user);
+    event UserExecutionSuccess(bytes32 txn_id);
 
-    function create_transaction(bytes32 txn_id, address custodian, bytes32 custodian_pwd_hash, 
+    function create_transaction(bytes32 txn_id, address user, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval, uint sbtc_amount) public {
         /* Assumed user has generated a unique txn_id.  May not matter, but just to avoid unnecessary
            handling and potential problems */
        
-        m_txns[txn_id] = ForwardTxn(msg.sender, txn_id, custodian, custodian_pwd_hash, timeout_interval,
+        m_txns[txn_id] = ForwardTxn(msg.sender, txn_id, user, custodian_pwd_hash, timeout_interval,
                                     block.number, sbtc_amount, TxnStates.CREATED);
         
-        emit UserTransactionCreated(txn_id, msg.sender, custodian);
+        emit CustodianTransactionCreated(txn_id, msg.sender, user);
     }
 
 
-    function execute(bytes32 txn_id, bytes pwd_str) public { /* Called by custodian */
+    function execute(bytes32 txn_id, bytes pwd_str) public { /* Called by user */ 
          
-        require(msg.sender == m_txns[txn_id].custodian, "Only custodian can call this"); 
+        require(msg.sender == m_txns[txn_id].user, "Only user can call this"); 
         require(m_txns[txn_id].state == TxnStates.CREATED, "Transaction already executed");
 
         ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
 
         /* Atomic swap logic.  Assumption here is that user has already deposited SBTC to this contract */
-        ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
+        ERC20Interface token_contract = ERC20Interface(m_ebtc_token_addr);
         if(block.number > (txn.creation_block + txn.timeout_interval)) {
-            require(token_contract.transferFrom(this, txn.user, txn.sbtc_amount));
+            require(token_contract.transferFrom(this, txn.custodian, txn.ebtc_amount));
         }
         else {
             require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
-            require(token_contract.transferFrom(this, txn.custodian, txn.sbtc_amount));
+            require(token_contract.transferFrom(this, txn.user, txn.ebtc_amount));
             txn.state = TxnStates.EXECUTED;
-            emit CustodianExecutionSuccess(txn_id, pwd_str);
+            emit UserExecutionSuccess(txn_id);
         }
     }
 }
