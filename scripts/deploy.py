@@ -6,13 +6,13 @@ from utils import *
 from common import *
 
 # This a separate function to be called only once.
-def deploy(contract_file, contract_name):
-    
-    compiled_sol = compile_source(open(contract_file, 'rt').read())
-    interface = compiled_sol['<stdin>:' + contract_name] 
-       
-    contract = w3.eth.contract(abi = interface['abi'], 
-                               bytecode = interface['bin'])
+def deploy(contract_name):
+    #compiled_sol = compile_source(open(contract_file, 'rt').read())
+    #interface = compiled_sol['<stdin>:' + contract_name] 
+    abi_file = contract_name + '.abi'
+    bin_file = contract_name + '.bin'
+    contract = w3.eth.contract(abi = open(abi_file, 'rt').read(),
+                               bytecode = '0x' + open(bin_file, 'rt').read()) 
     
     tx_hash = contract.deploy(transaction = {'from' : OWNER, 'gas' : GAS, 
                                              'gasPrice' : GAS_PRICE}) 
@@ -22,7 +22,10 @@ def deploy(contract_file, contract_name):
     
 
 def main():
-    deploy(CONTRACT_FILE, CONTRACT_NAME)
+    if len(sys.argv) != 2:
+        print 'Usage: python deploy.py <contract name>' 
+        exit(0)
+    deploy(contract_name)
 
 if __name__== '__main__':
     main()
