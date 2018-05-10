@@ -28,7 +28,7 @@ contract UserRSKContract is mortal {
     address constant m_sbtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
 
     event UserTransactionCreated(uint txn_id, address user, address custodian);
-    event CustodianExecutionSuccess(uint txn_id, bytes pwd_str); 
+    event CustodianExecutionSuccess(uint txn_id, string pwd_str); 
 
     function create_transaction(uint txn_id, address custodian, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval, uint sbtc_amount) public {
@@ -41,7 +41,7 @@ contract UserRSKContract is mortal {
     }
 
 
-    function execute(uint txn_id, bytes pwd_str) public { /* Called by custodian */
+    function execute(uint txn_id, string pwd_str) public { /* Called by custodian */
         require(msg.sender == m_txns[txn_id].custodian, "Only custodian can call this"); 
         require(m_txns[txn_id].state == TxnStates.CREATED, "Transaction already executed");
 
