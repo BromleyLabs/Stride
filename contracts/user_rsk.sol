@@ -15,7 +15,7 @@ contract UserRSKContract is mortal {
 
     struct ForwardTxn {
         address user;
-        bytes32 txn_id; 
+        uint txn_id; 
         address custodian; 
         bytes32 custodian_pwd_hash; /* Custodian password hash */
         uint timeout_interval; /* Blocks. Arbitary */ 
@@ -24,16 +24,15 @@ contract UserRSKContract is mortal {
         TxnStates state;
     } 
 
-    mapping (bytes32 => ForwardTxn) public m_txns; 
+    mapping (uint => ForwardTxn) public m_txns; 
     address constant m_sbtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
 
-    event UserTransactionCreated(bytes32 txn_id, address user, address custodian);
-    event CustodianExecutionSuccess(bytes32 txn_id, bytes pwd_str); 
+    event UserTransactionCreated(uint txn_id, address user, address custodian);
+    event CustodianExecutionSuccess(uint txn_id, bytes pwd_str); 
 
-    function create_transaction(bytes32 txn_id, address custodian, bytes32 custodian_pwd_hash, 
+    function create_transaction(uint txn_id, address custodian, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval, uint sbtc_amount) public {
-        /* Assumed user has generated a unique txn_id.  May not matter, but just to avoid unnecessary
-           handling and potential problems */
+        require(m_txns[txn_id].txn_id != txn_id, "Transaction already exists");
        
         m_txns[txn_id] = ForwardTxn(msg.sender, txn_id, custodian, custodian_pwd_hash, timeout_interval,
                                     block.number, sbtc_amount, TxnStates.CREATED);
@@ -42,8 +41,7 @@ contract UserRSKContract is mortal {
     }
 
 
-    function execute(bytes32 txn_id, bytes pwd_str) public { /* Called by custodian */
-         
+    function execute(uint txn_id, bytes pwd_str) public { /* Called by custodian */
         require(msg.sender == m_txns[txn_id].custodian, "Only custodian can call this"); 
         require(m_txns[txn_id].state == TxnStates.CREATED, "Transaction already executed");
 

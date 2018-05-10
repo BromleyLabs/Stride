@@ -15,7 +15,7 @@ contract CustodianEthContract is mortal {
 
     struct ForwardTxn {
         address custodian; 
-        bytes32 txn_id; 
+        uint txn_id; 
         address user;
         bytes32 custodian_pwd_hash; /* Custodian password hash */
         uint timeout_interval; /* Blocks. Arbitary */ 
@@ -24,16 +24,15 @@ contract CustodianEthContract is mortal {
         TxnStates state;
     } 
 
-    mapping (bytes32 => ForwardTxn) public m_txns; 
+    mapping (uint => ForwardTxn) public m_txns; 
     address constant m_ebtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
 
-    event CustodianTransactionCreated(bytes32 txn_id, address custodian, address user);
-    event UserExecutionSuccess(bytes32 txn_id);
+    event CustodianTransactionCreated(uint txn_id, address custodian, address user);
+    event UserExecutionSuccess(uint txn_id);
 
-    function create_transaction(bytes32 txn_id, address user, bytes32 custodian_pwd_hash, 
+    function create_transaction(uint txn_id, address user, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval, uint sbtc_amount) public {
-        /* Assumed user has generated a unique txn_id.  May not matter, but just to avoid unnecessary
-           handling and potential problems */
+        require(m_txns[txn_id].txn_id != txn_id, "Transaction already exists");
        
         m_txns[txn_id] = ForwardTxn(msg.sender, txn_id, user, custodian_pwd_hash, timeout_interval,
                                     block.number, sbtc_amount, TxnStates.CREATED);
@@ -41,15 +40,13 @@ contract CustodianEthContract is mortal {
         emit CustodianTransactionCreated(txn_id, msg.sender, user);
     }
 
-
-    function execute(bytes32 txn_id, bytes pwd_str) public { /* Called by user */ 
-         
+    function execute(uint txn_id, bytes pwd_str) public { /* Called by user */ 
         require(msg.sender == m_txns[txn_id].user, "Only user can call this"); 
         require(m_txns[txn_id].state == TxnStates.CREATED, "Transaction already executed");
 
         ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
 
-        /* Atomic swap logic.  Assumption here is that user has already deposited SBTC to this contract */
+        /* Atomic swap logic.  Assumption here is that custodian has already deposited EBTC to this contract */
         ERC20Interface token_contract = ERC20Interface(m_ebtc_token_addr);
         if(block.number > (txn.creation_block + txn.timeout_interval)) {
             require(token_contract.transferFrom(this, txn.custodian, txn.ebtc_amount));
