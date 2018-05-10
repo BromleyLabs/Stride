@@ -65,7 +65,7 @@ contract CustodianEthContract is mortal {
         }
         else {
             require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
-            require(token_contract.transferFrom(this, txn.user, txn.ebtc_amount));
+            require(token_contract.transferFrom(this, txn.user, txn.ebtc_amount)); /* TODO: to address should be user's Eth address */
             txn.state = TxnStates.EXECUTED;
             emit UserExecutionSuccess(txn_id);
         }

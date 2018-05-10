@@ -61,11 +61,11 @@ contract UserRSKContract is mortal {
         /* Atomic swap logic.  Assumption here is that user has already deposited SBTC to this contract */
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
         if(block.number > (txn.creation_block + txn.timeout_interval)) {
-            require(token_contract.transferFrom(this, txn.user, txn.sbtc_amount));
+            require(token_contract.transferFrom(this, txn.user, txn.sbtc_amount)); 
         }
         else {
             require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
-            require(token_contract.transferFrom(this, txn.custodian, txn.sbtc_amount));
+            require(token_contract.transferFrom(this, txn.custodian, txn.sbtc_amount));/* TODO: to address should be custodian's RSK address */
             txn.state = TxnStates.EXECUTED;
             emit CustodianExecutionSuccess(txn_id, pwd_str);
         }
