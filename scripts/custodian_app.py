@@ -22,6 +22,8 @@ def main():
     receive_q = RabbitMQ('user->custodian')
     contract = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, 
                                      CUSTODIAN_ABI_FILE) 
+    rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
+
     # Wait for INIT msg from user
     logger.info('Waiting for INIT msg from user')
     js = expect_msg(receive_q, 'INIT', None) 
@@ -30,11 +32,23 @@ def main():
     logger.info('INIT rececived from user. txn_id = %s, amount = %d' % 
                  (hex(txn_id), token_amount))
   
+    # Send password hash to user 
     pwd_str, pwd_hash = generate_random_pwd() 
     logger.info('pwd = %s, pwd_hash = %s' % (pwd_str, pwd_hash.hex()))    
-    
     msg = json.dumps({'type': 'PWD_HASH', 'txn_id' : txn_id, 'pwd_hash' : pwd_hash.hex()})
     send_q.send(msg)
+
+    # Wait for user to create contract transaction 
+    event_filter = rsk.contract.events.UserTransactionCreated.createFilter(fromBlock = 'latest')
+    found = False
+    while not found: 
+        events = event_filter.get_new_entries()
+        for event in events:
+            if event['args']['txn_id'] == txn_id:
+                logger.info('User has created transaction for %s' % hex(txn_id))
+                found = True
+                break
+        time.sleep(3)
 
     #tx_receipt = contract.create_transaction(txn_id, CUSTODIAN_ETH, USER_ETH, 
     #                                         pwd_hash, 200, ebtc_amount) 

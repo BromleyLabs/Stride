@@ -3,6 +3,7 @@ from hexbytes import HexBytes
 from web3.contract import ConciseContract
 import os
 from utils import *
+from config import *
 
 class CustodianEthContract:
     def __init__(self, addr, abi_file):
