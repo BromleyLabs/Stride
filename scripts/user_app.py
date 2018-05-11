@@ -1,14 +1,42 @@
 from web3.auto import w3
 from hexbytes import HexBytes
-from web3.contract import ConciseContract
 import os
+import pika
+import uuid
+from config import *
+import utils
 from utils import *
-from common import *
+from contracts import *
+import json
+
+logger = None
 
 def main():
+    global logger
+    logger = init_logger('USER')
+    utils.logger = logger
+    send_q = RabbitMQ('user->custodian')
+    send_q.purge()
+    receive_q = RabbitMQ('custodian->user')
+    receive_q.purge()
     rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
-    pwd_hash =  HexBytes('0x93f0218b357b9256799540fe638f53f9ab92be1e0457d42c7470c3bd3140d393')
-    txn_id = 1
+
+    logger.info('Initiate txn')
+    u =  uuid.uuid4()  # Random 128 bits 
+    txn_id = u.int 
+    logger.info('Txn Id: 0x%s' % u.hex)
+    
+    txn_init = json.dumps({'type' : 'INIT', 'txn_id' : txn_id, 'sbtc_amount' : int(0.001 * 1e18)})
+    send_q.send(txn_init) 
+
+    # Expect custodian password hash 
+    js = expect_msg(receive_q, 'PWD_HASH', txn_id)
+            
+    pwd_hash = js['pwd_hash']
+    logger.info('Password hash: %s' % pwd_hash) 
+
+    # Expect response from custodian  
+
     #tx_hash = rsk.create_transaction(txn_id, USER_RSK, CUSTODIAN_RSK, pwd_hash, 200,
     #                                 int(0.001 * 1e18)) 
     #wait_to_be_mined(tx_hash)
@@ -26,9 +54,8 @@ def main():
     
     # TODO: Watch for CustodianExecutionSuccess event and read the password  
 
-    pwd_str = 'CAMX' 
-    eth = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE)
-    eth.execute(USER_ETH, txn_id, pwd_str)
+    #eth = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE)
+    #eth.execute(USER_ETH, txn_id, pwd_str)
    
 if __name__== '__main__':
     main()

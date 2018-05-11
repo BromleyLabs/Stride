@@ -1,22 +1,41 @@
 from web3.auto import w3
 from hexbytes import HexBytes
-from web3.contract import ConciseContract
 import os
+import utils
 from utils import *
-from common import *
+from config import *
+from contracts import *
 import string
 import random
 
+logger = None
 def generate_random_pwd():
     s = ''.join([random.choice(string.ascii_uppercase) for n in range(4)])
     h_hash = w3.sha3(text = s) 
     return s, h_hash
 
 def main():
-    contract = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE)
-    pwd_hash =  HexBytes('0x93f0218b357b9256799540fe638f53f9ab92be1e0457d42c7470c3bd3140d393')
-    txn_id = 1
-    ebtc_amount = int(0.001 * 1e18) 
+    global logger
+    logger = init_logger('CUST')
+    utils.logger = logger
+    send_q = RabbitMQ('custodian->user')
+    receive_q = RabbitMQ('user->custodian')
+    contract = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, 
+                                     CUSTODIAN_ABI_FILE) 
+    # Wait for INIT msg from user
+    logger.info('Waiting for INIT msg from user')
+    js = expect_msg(receive_q, 'INIT', None) 
+    txn_id = js['txn_id']
+    token_amount = js['sbtc_amount']   
+    logger.info('INIT rececived from user. txn_id = %s, amount = %d' % 
+                 (hex(txn_id), token_amount))
+  
+    pwd_str, pwd_hash = generate_random_pwd() 
+    logger.info('pwd = %s, pwd_hash = %s' % (pwd_str, pwd_hash.hex()))    
+    
+    msg = json.dumps({'type': 'PWD_HASH', 'txn_id' : txn_id, 'pwd_hash' : pwd_hash.hex()})
+    send_q.send(msg)
+
     #tx_receipt = contract.create_transaction(txn_id, CUSTODIAN_ETH, USER_ETH, 
     #                                         pwd_hash, 200, ebtc_amount) 
     # TODO: Next watch for UserTransactionCreated event on RSK.
@@ -31,9 +50,8 @@ def main():
 
     # TODO: Custodian watches UserTransferred event on RSK
     
-    pwd_str = 'CAMX' 
-    rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
-    rsk.execute(CUSTODIAN_RSK, txn_id, pwd_str)
+    #rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
+    #rsk.execute(CUSTODIAN_RSK, txn_id, pwd_str)
 
 if __name__== '__main__':
     main()
