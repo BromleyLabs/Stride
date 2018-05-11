@@ -19,9 +19,11 @@ CUSTODIAN_BIN_FILE = os.path.join('../contracts/target/', CUSTODIAN_CONTRACT_NAM
 GAS = 4000000 
 GAS_PRICE = 25000000000
 OWNER = w3.eth.accounts[0]
-USER = w3.eth.accounts[0]
-CUSTODIAN = w3.eth.accounts[2]
-ETH_ADDR = w3.eth.accounts[1]
+USER_RSK = w3.eth.accounts[0]
+USER_ETH = w3.eth.accounts[1]
+CUSTODIAN_ETH = w3.eth.accounts[3]
+CUSTODIAN_RSK = w3.eth.accounts[2] 
+
 WETH_ADDR = '0xc778417E063141139Fce010982780140Aa0cD5Ab' 
 
 class CustodianEthContract:
