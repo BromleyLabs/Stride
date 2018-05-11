@@ -65,7 +65,7 @@ contract UserRSKContract is mortal {
         }
         else {
             require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
-            require(token_contract.transferFrom(this, txn.custodian_rsk, txn.sbtc_amount));/* TODO: to address should be custodian's RSK address */
+            require(token_contract.transferFrom(this, txn.custodian_rsk, txn.sbtc_amount));
             txn.state = TxnStates.EXECUTED;
             emit CustodianExecutionSuccess(txn_id, pwd_str);
         }
