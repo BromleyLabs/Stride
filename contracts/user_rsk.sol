@@ -52,6 +52,7 @@ contract UserRSKContract is mortal {
         emit UserTransferred(txn_id);
     }
 
+    /* TODO: Separate the two parts below into separate function calls */
     function execute(uint txn_id, string pwd_str) public { /* Called by custodian */
         require(msg.sender == m_txns[txn_id].custodian_rsk, "Only custodian can call this"); 
         require(m_txns[txn_id].state == TxnStates.CREATED, "Transaction already executed");

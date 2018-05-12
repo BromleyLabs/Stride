@@ -52,6 +52,7 @@ contract CustodianEthContract is mortal {
         emit CustodianTransferred(txn_id);
     }
 
+    /* TODO: Separate the two parts below into separate function calls */
     function execute(uint txn_id, string pwd_str) public { /* Called by user */ 
         require(msg.sender == m_txns[txn_id].user_eth, "Only user can call this"); 
         require(m_txns[txn_id].state == TxnStates.CREATED, "Transaction already executed");
