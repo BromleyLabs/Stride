@@ -20,6 +20,7 @@ def main():
     receive_q = RabbitMQ('custodian->user')
     receive_q.purge()
     rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
+    eth = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE) 
 
     # Initial transaction 
     logger.info('Initiate txn')
@@ -33,31 +34,50 @@ def main():
 
     # Expect custodian password hash 
     js = expect_msg(receive_q, 'PWD_HASH', txn_id)
-    pwd_hash = js['pwd_hash']
-    logger.info('Password hash: %s' % pwd_hash) 
+    pwd_hash = HexBytes(js['pwd_hash'])
+    logger.info('Password hash: %s' % pwd_hash.hex()) 
 
     # Init contract
-     
-    pwd_hash = HexBytes(pwd_hash) 
-    tx_hash = rsk.create_transaction(txn_id, USER_RSK, CUSTODIAN_RSK, pwd_hash,
-                                     200, sbtc_amount)
-    wait_to_be_mined(tx_hash)
-    
-    # TODO: Next watch for CustodianTransactionCreated event.
-    # Check the if the transaction contents are ok 
+    logger.info('Initializing user side contract')
+    tx_receipt = rsk.create_transaction(txn_id, USER_RSK, CUSTODIAN_RSK, 
+                                        pwd_hash, 200, sbtc_amount)
+    logger.info('User contract initialized')
+
+    # Wait for custodian to init Eth contract 
+    logger.info('Waiting for custodian to init contract')
+    event_filter = eth.contract.events.CustodianTransactionCreated.createFilter(fromBlock = 'latest')
+    wait_for_event(event_filter, txn_id)
+    logger.info('CustodianTransactionCreated event received')
+
+    # TODO: Check the if the transaction contents are ok 
+
     # User watches CustodianTransferred() event on Eth
+    logger.info('Waiting for CustodianTransferred event')
+    event_filter = eth.contract.events.CustodianTransferred.createFilter(fromBlock = 'latest')
+    wait_for_event(event_filter, txn_id)
+    logger.info('Custodian Transferred event received')
 
-    #print('Approving ..')
-    #tx_receipt = erc20_approve(WETH_ADDR, USER_RSK, USER_CONTRACT_ADDR, 
-    #                           int(10.0 * 1e18), GAS, GAS_PRICE)
+    logger.info('Approving user to move funds..')
+    tx_receipt = erc20_approve(WETH_ADDR, USER_RSK, USER_CONTRACT_ADDR, 
+                               int(10.0 * 1e18), GAS, GAS_PRICE)
+    logger.info('Approved')
 
-    #print('Transferring..')
-    #tx_receipt = rsk.transfer_to_contract(txn_id, USER) 
+    logger.info('Transferring funds from user to contract')
+    tx_receipt = rsk.transfer_to_contract(txn_id, USER_RSK) 
+    logger.info('Transferred')
     
-    # TODO: Watch for CustodianExecutionSuccess event and read the password  
-
-    #eth = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE)
-    #eth.execute(USER_ETH, txn_id, pwd_str)
+    logger.info('Waiting for CustodianExcecutionSuccess event')
+    event_filter = rsk.contract.events.CustodianExecutionSuccess.createFilter(fromBlock = 'latest')
+    event = wait_for_event(event_filter, txn_id)
+    logger.info('CustodianExecutionSuccess event received')
+    pwd_str = event['args']['pwd_str']
+    logger.info('Pwd string = %s' % pwd_str)
+   
+    # Now execute contract on Eth side
+    logger.info('Executing custodian side contract')
+    eth = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE)
+    eth.execute(USER_ETH, txn_id, pwd_str)
+    logger.info('Transaction complete')
    
 if __name__== '__main__':
     main()

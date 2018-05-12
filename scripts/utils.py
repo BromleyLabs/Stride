@@ -65,18 +65,13 @@ def sign_bytearray(barray, account_adr):
     return h_hash, v_int, r, s
 
 def wait_to_be_mined(tx_hash):
-    logger.info('Tx hash: %s\n' % HexBytes(tx_hash).hex())
-    logger.info('Waiting for transaction to get mined..\n')
-    first = True 
+    logger.info('Tx hash: %s' % HexBytes(tx_hash).hex())
+    logger.info('Waiting for transaction to get mined')
     while 1:
         tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
         if tx_receipt is None:
             time.sleep(10)
             continue
-
-        if first:
-            logger.info(tx_receipt)
-            first = False 
 
         if tx_receipt['status'] != 1:
             logger.info('ERROR in transaction')
@@ -88,7 +83,7 @@ def wait_to_be_mined(tx_hash):
 
         time.sleep(10) 
 
-    logger.info(tx_receipt)
+    logger.debug(tx_receipt)
     return tx_receipt
 
 def erc20_approve(erc20_address, from_addr, to_addr, amount, gas, gas_price):
@@ -107,7 +102,7 @@ def init_logger(module_name):
     fh = logging.FileHandler('log.txt')
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     # create formatter and add it to the handlers
     formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s]: %(message)s')
     fh.setFormatter(formatter)
@@ -134,3 +129,16 @@ def expect_msg(q, msg_type, txn_id):
                 break
 
     return js
+
+def wait_for_event(event_filter, txn_id):
+    found = False
+    while not found: 
+        events = event_filter.get_new_entries()
+        for event in events:
+            if event['args']['txn_id'] == txn_id:
+                logger.info('Event received')
+                logger.debug(event)
+                found = True
+                break
+        time.sleep(3)
+    return event

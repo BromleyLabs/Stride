@@ -51,7 +51,7 @@ class UserRSKContract:
                                          timeout_interval, sbtc_amount, 
                                          transact = {'from' : user,
                                          'gas' : GAS, 'gasPrice' : GAS_PRICE}) 
-        return tx_hash
+        return wait_to_be_mined(tx_hash)
 
     def transfer_to_contract(self, txn_id, from_addr):
         tx_hash = self.concise.transfer_to_contract(txn_id,
