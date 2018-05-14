@@ -1,31 +1,33 @@
-from web3.auto import w3
+from web3 import Web3
 from hexbytes import HexBytes
-from solc import compile_source
-import os
 import sys
 from utils import *
-from common import *
-
-
-# This a separate function to be called only once.
-def deploy(contract_name):
-    #compiled_sol = compile_source(open(contract_file, 'rt').read())
-    #interface = compiled_sol['<stdin>:' + contract_name] 
-    abi_file = contract_name + '.abi'
-    bin_file = contract_name + '.bin'
-    contract = w3.eth.contract(abi = open(abi_file, 'rt').read(),
-                               bytecode = '0x' + open(bin_file, 'rt').read()) 
-    
-    tx_hash = contract.deploy(transaction = {'from' : OWNER, 'gas' : GAS, 
-                                             'gasPrice' : GAS_PRICE}) 
-    wait_to_be_mined(tx_hash)
-    
+import utils
+import config
 
 def main():
     if len(sys.argv) != 2:
-        print('Usage: python deploy.py <contract name>')
+        print('Usage: python deploy.py <rsk | eth>')
         exit(0)
-    deploy(sys.argv[1])
+
+    logger = init_logger('DEPLOY')
+    utils.logger = logger
+ 
+    if sys.argv[1] == 'rsk':
+        chain = config.rsk 
+    elif sys.argv[1] == 'eth':
+        chain = config.eth
+    else:
+        print('Incorrect chain specified')
+        exit(0)
+
+    w3 = Web3(Web3.HTTPProvider(chain.rpc_addr))
+    utils.w3 = w3
+    if chain == config.rsk: 
+        unlock_accounts([chain.contract_owner], "puneet")
+    # For Parity start parity node with unlocked accounts 
+    tx_receipt = deploy(chain)
+    logger.info('Contract address = %s' % tx_receipt['contractAddress']
 
 if __name__== '__main__':
     main()

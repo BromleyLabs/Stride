@@ -1,4 +1,3 @@
-from web3.auto import w3
 from hexbytes import HexBytes
 from web3.contract import ConciseContract
 import time
@@ -6,7 +5,24 @@ import pika
 import logging 
 import json
 
-logger = None
+logger = None # Logger instance, to be set by importer 
+w3 = None  # Web3 instance, to be set by importer
+
+def init_logger(module_name):
+    logger = logging.getLogger(module_name)
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler('log.txt')
+    fh.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s]: %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    return logger
 
 class RabbitMQ: 
     def __init__(self, qname):
@@ -45,6 +61,7 @@ class RabbitMQ:
          
     def close(self):
         self.connection.close()
+
 
 def checksum(addr):
     if not w3.isChecksumAddress(addr):
@@ -96,21 +113,6 @@ def erc20_approve(erc20_address, from_addr, to_addr, amount, gas, gas_price):
     return wait_to_be_mined(tx_hash)
 
 
-def init_logger(module_name):
-    logger = logging.getLogger(module_name)
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('log.txt')
-    fh.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s]: %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-    return logger
 
 def expect_msg(q, msg_type, txn_id):
     js = {}
@@ -142,3 +144,28 @@ def wait_for_event(event_filter, txn_id):
                 break
         time.sleep(3)
     return event
+
+def unlock_accounts(accounts_list, pwd):
+    for a in accounts_list:
+        w3.personal.unlockAccount(a, pwd) 
+
+def deploy(conf):
+    logger.info('Deploying contract on %s' % conf.name)
+    abi = open(conf.abi_file, 'rt').read()
+    bytecode = '0x' + open(conf.bin_file, 'rt').read() 
+    contract = w3.eth.contract(abi = abi, bytecode = bytecode)
+    tx_hash = contract.deploy(transaction = {'from' : conf.contract_owner, 
+                                'gas' : conf.gas, 'gasPrice' : conf.gas_price}) 
+    return wait_to_be_mined(tx_hash)
+
+def kill(conf):
+    logger.info('Killing contract on %s' % conf.name)
+    abi = open(conf.abi_file, 'rt').read() 
+    contract = w3.eth.contract(abi = abi, address = conf.contract_addr)
+    concise = ConciseContract(contract)
+    tx_hash = concise.kill(transact = {'from' : conf.contract_owner, 'gas' : 
+                                     conf.gas, 'gasPrice' : conf.gas_price}) 
+    print('Tx hash: %s' % HexBytes(tx_hash).hex())
+ 
+    return wait_to_be_mined(tx_hash)
+
