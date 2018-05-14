@@ -25,7 +25,6 @@ contract UserRSKContract is mortal {
     } 
 
     mapping (uint => ForwardTxn) public m_txns; 
-    address constant m_sbtc_token_addr = 0xa4E98ec66E91abA653597501e8D1a7126A1932E3; /* SBTC */ 
 
     event UserTransactionCreated(uint txn_id, address user_rsk, address custodian_rsk);
     event UserTransferred(uint txn_id);
@@ -42,14 +41,11 @@ contract UserRSKContract is mortal {
         emit UserTransactionCreated(txn_id, msg.sender, custodian_rsk);
     }
 
-    function transfer_to_contract(uint txn_id) public { /* To be called by user */
+    function transfer_to_contract(uint txn_id) public payable { /* To be called by user */
         ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
-        /* Assumed user has approved movement of sbtc tokens from his account to this contract */
         require(msg.sender == txn.user_rsk);
         require(txn.txn_id == txn_id, "Transaction does not exist"); 
-     
-        ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
-        require(token_contract.transferFrom(txn.user_rsk, this, txn.sbtc_amount)); 
+        require(msg.value == txn.sbtc_amount, "Sent SBTC amount does not match"); 
 
         emit UserTransferred(txn_id);
     }
@@ -60,8 +56,7 @@ contract UserRSKContract is mortal {
         require(txn.state == TxnStates.CREATED, "Transaction not in CREATED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
 
-        ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
-        require(token_contract.transferFrom(this, txn.user_rsk, txn.sbtc_amount)); 
+        txn.user_rsk.transfer(txn.sbtc_amount);
         txn.state = TxnStates.REFUNDED;
 
         emit RefundedToUser(txn_id);
@@ -74,8 +69,8 @@ contract UserRSKContract is mortal {
         require(block.number <= (txn.creation_block + txn.timeout_interval));
         require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
 
-        ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
-        require(token_contract.transferFrom(this, txn.custodian_rsk, txn.sbtc_amount));
+        txn.custodian_rsk.transfer(txn.sbtc_amount); 
+
         txn.state = TxnStates.EXECUTED;
 
         emit CustodianExecutionSuccess(txn_id, pwd_str);
