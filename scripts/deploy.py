@@ -19,7 +19,7 @@ def main():
         printf('Incorrect argument')
 
     tx_receipt = chain.deploy() 
-    logger.info('Contact address = %s' % tx_receipt['contractAddress']
+    logger.info('Contact address = %s' % tx_receipt['contractAddress'])
 
 if __name__== '__main__':
     main()

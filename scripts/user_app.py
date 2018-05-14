@@ -61,14 +61,9 @@ def main():
     eth.wait_for_event(event_filter, txn_id)
     logger.info('Custodian Transferred event received')
 
-    logger.info('Approving user to move funds..')
-    tx_receipt = rsk.erc20_approve(config.rsk.token_addr, config.rsk.user, 
-                               config.rsk.contract_addr, int(10.0 * 1e18), 
-                               config.rsk.gas, config.rsk.gas_price) 
-    logger.info('Approved')
-
     logger.info('Transferring funds from user to contract')
-    tx_receipt = rsk_contract.transfer_to_contract(txn_id, config.rsk.user) 
+    tx_receipt = rsk_contract.transfer_to_contract(txn_id, config.rsk.user, 
+                                                   sbtc_amount) 
     logger.info('Transferred')
     
     logger.info('Waiting for CustodianExcecutionSuccess event')

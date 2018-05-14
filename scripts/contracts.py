@@ -66,11 +66,12 @@ class RSKContract:
                                         'gasPrice' : self.config.gas_price})
         return self.rsk.wait_to_be_mined(tx_hash)
 
-    def transfer_to_contract(self, txn_id, from_addr):
+    def transfer_to_contract(self, txn_id, from_addr, sbtc_amount):
         tx_hash = self.concise.transfer_to_contract(txn_id,
                                          transact = {'from' : from_addr, 
                                          'gas' : self.config.gas, 
-                                         'gasPrice' : self.config.gas_price})
+                                         'gasPrice' : self.config.gas_price,
+                                         'value' : sbtc_amount})
         return self.rsk.wait_to_be_mined(tx_hash)
 
     def request_refund(self, txn_id, from_addr):
