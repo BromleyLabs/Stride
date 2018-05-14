@@ -1,41 +1,47 @@
-from web3.auto import w3
 from hexbytes import HexBytes
 import os
 import pika
 import uuid
-from config import *
-import utils
+import config
 from utils import *
 from contracts import *
 import json
 
-logger = None
-
 def main():
-    global logger
     logger = init_logger('USER')
-    utils.logger = logger
+    rsk = W3Utils(config.rsk, logger)
+    eth = W3Utils(config.eth, logger) 
+    logger = rsk.logger # Either one. Both point to same logger 
+
     send_q = RabbitMQ('user->custodian')
     send_q.purge()
     receive_q = RabbitMQ('custodian->user')
     receive_q.purge()
-    rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
-    eth = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, CUSTODIAN_ABI_FILE) 
+
+    rsk_contract = RSKContract(config.rsk, logger)
+    eth_contract = EthContract(config.eth, logger)
+    
+    logger.info('Starting User transaction process ..')
+    logger.info('User RSK account balance = %f' % ( 
+                       rsk.w3.eth.getBalance(config.rsk.user) / float(1e18)))
+    logger.info('User ETH account balance = %f' % (eth.w3.eth.getBalance(config.eth.user) / float(1e18)))
 
     # Initial transaction 
     logger.info('Initiate txn')
     u =  uuid.uuid4()  # Random 128 bits 
     txn_id = u.int 
     logger.info('Txn Id: 0x%s' % u.hex)
-    sbtc_amount = int(0.001 * 1e18) 
+    sbtc_amount = int(0.0001 * 1e18) 
     txn_init = json.dumps({'type' : 'INIT', 'txn_id' : txn_id, 
                            'sbtc_amount' : sbtc_amount}) 
     send_q.send(txn_init) 
 
     # Expect custodian password hash 
-    js = expect_msg(receive_q, 'PWD_HASH', txn_id)
+    js = rsk.expect_msg(receive_q, 'PWD_HASH', txn_id)
     pwd_hash = HexBytes(js['pwd_hash'])
     logger.info('Password hash: %s' % pwd_hash.hex()) 
+
+    exit(0)
 
     # Init contract
     logger.info('Initializing user side contract')

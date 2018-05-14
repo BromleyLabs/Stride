@@ -1,32 +1,33 @@
-from web3.auto import w3
 from hexbytes import HexBytes
 import os
-import utils
-from utils import *
-from config import *
-from contracts import *
+import pika
+import uuid
+import config
+import json
 import string
 import random
+from utils import *
+from contracts import *
 
-logger = None
 def generate_random_pwd():
     s = ''.join([random.choice(string.ascii_uppercase) for n in range(4)])
     h_hash = w3.sha3(text = s) 
     return s, h_hash
 
 def main():
-    global logger
     logger = init_logger('CUST')
-    utils.logger = logger
+    eth = W3Utils(config.eth, logger)
+    rsk = W3Utils(config.rsk, logger) 
+
     send_q = RabbitMQ('custodian->user')
     receive_q = RabbitMQ('user->custodian')
-    contract = CustodianEthContract(CUSTODIAN_CONTRACT_ADDR, 
-                                     CUSTODIAN_ABI_FILE) 
-    rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
+
+    eth_contract = EthContract(config.eth, logger)
+    rsk_contract = RSKContract(config.rsk, logger)
 
     # Wait for INIT msg from user
     logger.info('Waiting for INIT msg from user')
-    js = expect_msg(receive_q, 'INIT', None) 
+    js = eth.expect_msg(receive_q, 'INIT', None) 
     txn_id = js['txn_id']
     ebtc_amount = js['sbtc_amount']   
     logger.info('INIT rececived from user. txn_id = %s, amount = %d' % 
@@ -39,6 +40,7 @@ def main():
     send_q.send(msg)
     logger.info('Send password hash to user')
 
+    exit(0)
     # Wait for user to create contract transaction 
     logger.info('Waiting for UserTransactionCreated event')
     event_filter = rsk.contract.events.UserTransactionCreated.createFilter(fromBlock = 'latest')
