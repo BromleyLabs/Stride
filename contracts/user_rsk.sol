@@ -25,7 +25,7 @@ contract UserRSKContract is mortal {
     } 
 
     mapping (uint => ForwardTxn) public m_txns; 
-    address constant m_sbtc_token_addr = 0xc778417E063141139Fce010982780140Aa0cD5Ab; /* WETH for testing */ 
+    address constant m_sbtc_token_addr = 0xa4E98ec66E91abA653597501e8D1a7126A1932E3; /* SBTC */ 
 
     event UserTransactionCreated(uint txn_id, address user_rsk, address custodian_rsk);
     event UserTransferred(uint txn_id);
