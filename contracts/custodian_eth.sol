@@ -44,17 +44,18 @@ contract CustodianEthContract is mortal {
 
     function transfer_to_contract(uint txn_id) public { /* To be called by custodian */
         /* Assumed customer has approved movement of erc20 tokens from his account to this contract */
-        require(msg.sender == m_txns[txn_id].custodian_eth);
-        require(m_txns[txn_id].txn_id == txn_id, "Transaction does not exist"); 
+        ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
+        require(msg.sender == txn.custodian_eth);
+        require(txn.txn_id == txn_id, "Transaction does not exist"); 
      
         ERC20Interface token_contract = ERC20Interface(m_ebtc_token_addr);
-        require(token_contract.transferFrom(m_txns[txn_id].custodian_eth, this, m_txns[txn_id].ebtc_amount)); 
+        require(token_contract.transferFrom(txn.custodian_eth, this, txn.ebtc_amount)); 
 
         emit CustodianTransferred(txn_id);
     }
 
-    function refund(uint txn_id) public { /* Called by custodian */
-        ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
+    function request_refund(uint txn_id) public { /* Called by custodian */
+        ForwardTxn memory txn = m_txns[txn_id]; 
         require(msg.sender == txn.custodian_eth, "Only custodian can call this"); 
         require(txn.state == TxnStates.CREATED, "Transaction not in CREATED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));

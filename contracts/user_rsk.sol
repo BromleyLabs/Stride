@@ -43,18 +43,19 @@ contract UserRSKContract is mortal {
     }
 
     function transfer_to_contract(uint txn_id) public { /* To be called by user */
+        ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
         /* Assumed user has approved movement of sbtc tokens from his account to this contract */
-        require(msg.sender == m_txns[txn_id].user_rsk);
-        require(m_txns[txn_id].txn_id == txn_id, "Transaction does not exist"); 
+        require(msg.sender == txn.user_rsk);
+        require(txn.txn_id == txn_id, "Transaction does not exist"); 
      
         ERC20Interface token_contract = ERC20Interface(m_sbtc_token_addr);
-        require(token_contract.transferFrom(m_txns[txn_id].user_rsk, this, m_txns[txn_id].sbtc_amount)); 
+        require(token_contract.transferFrom(txn.user_rsk, this, txn.sbtc_amount)); 
 
         emit UserTransferred(txn_id);
     }
 
-    function refund(uint txn_id) public { /* Called by user */
-        ForwardTxn memory txn = m_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
+    function request_refund(uint txn_id) public { /* Called by user */
+        ForwardTxn memory txn = m_txns[txn_id]; 
         require(msg.sender == txn.user_rsk, "Only user can call this"); 
         require(txn.state == TxnStates.CREATED, "Transaction not in CREATED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
