@@ -17,7 +17,7 @@ class ChainConfig:
         self.custodian = None
 
 rsk = ChainConfig('RSK')
-rsk.contract_addr = '0xc86E27e0d438aa0ADF72c56FA17a8833E5eE3510'
+rsk.contract_addr = '0xB4d7588e8fCE7E046330a62b0eafA1F3FfE019EF'
 rsk.contract_name = 'UserRSKContract'
 rsk.contract_path = '../contracts/target'
 rsk.abi_file = os.path.join(rsk.contract_path, rsk.contract_name + '.abi')

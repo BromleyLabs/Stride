@@ -11,22 +11,14 @@ def main():
         exit(0)
 
     logger = init_logger('KILL')
-    utils.logger = logger
- 
     if sys.argv[1] == 'rsk':
-        chain = config.rsk 
+        chain = W3Utils(config.rsk, logger)
     elif sys.argv[1] == 'eth':
-        chain = config.eth
+        chain = W3Utils(config.eth, logger)
     else:
-        print('Incorrect chain specified')
-        exit(0)
+        printf('Incorrect argument')
 
-    w3 = Web3(Web3.HTTPProvider(chain.rpc_addr))
-    utils.w3 = w3
-    if chain == config.rsk: 
-        unlock_accounts([chain.contract_owner], "puneet")
-    # For Parity start parity node with unlocked accounts 
-    kill(chain)
+    chain.kill()
 
 if __name__== '__main__':
     main()

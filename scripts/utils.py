@@ -101,11 +101,11 @@ class W3Utils:
                 continue
     
             if tx_receipt['status'] != 1:
-                logger.info('ERROR in transaction')
+                self.logger.info('ERROR in transaction')
                 break 
     
             if tx_receipt['blockNumber'] is not None:
-                logger.info('Transaction mined')
+                self.logger.info('Transaction mined')
                 break
     
             time.sleep(10) 
@@ -121,7 +121,7 @@ class W3Utils:
         tx_hash = concise.approve(to_addr, amount,
                                 transact = {'from': from_addr, 'gas': gas, 
                                             'gasPrice': gas_price}) 
-        return wait_to_be_mined(tx_hash)
+        return self.wait_to_be_mined(tx_hash)
 
     def expect_msg(self, q, msg_type, txn_id):
         js = {}
@@ -162,20 +162,18 @@ class W3Utils:
         self.logger.info('Deploying contract on %s' % conf.name)
         abi = open(conf.abi_file, 'rt').read()
         bytecode = '0x' + open(conf.bin_file, 'rt').read() 
-        contract = w3.eth.contract(abi = abi, bytecode = bytecode)
+        contract = self.w3.eth.contract(abi = abi, bytecode = bytecode)
         tx_hash = contract.deploy(transaction = {'from' : conf.contract_owner, 
                                     'gas' : conf.gas, 'gasPrice' : conf.gas_price}) 
-        return wait_to_be_mined(tx_hash)
+        return self.wait_to_be_mined(tx_hash)
 
     def kill(self):
         conf = self.chain_config
-        logger.info('Killing contract on %s' % conf.name)
+        self.logger.info('Killing contract on %s' % conf.name)
         abi = open(conf.abi_file, 'rt').read() 
-        contract = w3.eth.contract(abi = abi, address = conf.contract_addr)
+        contract = self.w3.eth.contract(abi = abi, address = conf.contract_addr)
         concise = ConciseContract(contract)
         tx_hash = concise.kill(transact = {'from' : conf.contract_owner, 
                                  'gas' : conf.gas, 'gasPrice' : conf.gas_price}) 
-        print('Tx hash: %s' % HexBytes(tx_hash).hex())
-     
-        return wait_to_be_mined(tx_hash)
+        return self.wait_to_be_mined(tx_hash)
 

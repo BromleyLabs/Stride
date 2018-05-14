@@ -40,44 +40,42 @@ def main():
     send_q.send(msg)
     logger.info('Send password hash to user')
 
-    exit(0)
     # Wait for user to create contract transaction 
     logger.info('Waiting for UserTransactionCreated event')
-    event_filter = rsk.contract.events.UserTransactionCreated.createFilter(fromBlock = 'latest')
-    wait_for_event(event_filter, txn_id)
+    event_filter = rsk_contract.contract.events.UserTransactionCreated.createFilter(fromBlock = 'latest')
+    rsk.wait_for_event(event_filter, txn_id)
     logger.info('UserTransactionCreated event received')
 
     # Now create Eth transaction 
     logger.info('Initializing custodian side contract')
-    tx_receipt = contract.create_transaction(txn_id, CUSTODIAN_ETH, USER_ETH, 
-                                             pwd_hash, 200, ebtc_amount) 
+    tx_receipt = eth_contract.create_transaction(txn_id, config.eth.custodian,
+                                             config.eth.user, pwd_hash, 200, 
+                                             ebtc_amount) 
     logger.info('Custodian contract initialized')
 
     logger.info('Approving contract to move funds..')
-    tx_receipt = erc20_approve(WETH_ADDR, CUSTODIAN_ETH, 
-                               CUSTODIAN_CONTRACT_ADDR, int(10.0 * 1e18), 
-                               GAS, GAS_PRICE)
+    tx_receipt = eth.erc20_approve(config.eth.token_addr, config.eth.custodian, 
+                               config.eth.contract_addr, int(10.0 * 1e18), 
+                               config.eth.gas, config.eth.gas_price) 
     logger.info('Approved')
 
     logger.info('Transferring funds from custodian to contract')
-    tx_receipt = contract.transfer_to_contract(txn_id, CUSTODIAN_ETH) 
+    tx_receipt = eth_contract.transfer_to_contract(txn_id, config.eth.custodian)
     logger.info('Transferred')
 
-    # Custodian watch for UserTransferred event on RSK
     logger.info('Waiting for UserTransferred event')
-    event_filter = rsk.contract.events.UserTransferred.createFilter(fromBlock = 'latest')
-    wait_for_event(event_filter, txn_id)
+    event_filter = rsk_contract.contract.events.UserTransferred.createFilter(fromBlock = 'latest')
+    rsk.wait_for_event(event_filter, txn_id)
     logger.info('UserTransferred event received')
     
     logger.info('Executing User side contract')
-    rsk = UserRSKContract(USER_CONTRACT_ADDR, USER_ABI_FILE)
-    rsk.execute(CUSTODIAN_RSK, txn_id, pwd_str)
+    rsk_contract.execute(config.rsk.custodian, txn_id, pwd_str)
     logger.info('Excecution completed')
 
-    logger.info('Waiting for CustodianExcecutionSuccess event from RSK')
-    event_filter = rsk.contract.events.CustodianExecutionSuccess.createFilter(fromBlock = 'latest')
-    event = wait_for_event(event_filter, txn_id)
-    logger.info('CustodianExecutionSuccess event received')
+    logger.info('Waiting for UserExcecutionSuccess event from Eth')
+    event_filter = eth_contract.contract.events.UserExecutionSuccess.createFilter(fromBlock = 'latest')
+    event = eth.wait_for_event(event_filter, txn_id)
+    logger.info('UserExecutionSuccess event received')
 
     logger.info('Transaction complete')
 
