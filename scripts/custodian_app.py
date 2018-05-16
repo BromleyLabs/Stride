@@ -15,7 +15,7 @@ def generate_random_pwd():
     return s, h_hash
 
 def main():
-    logger = init_logger('CUST')
+    logger = init_logger('CUST', 'stride.log')
     eth = W3Utils(config.eth, logger)
     rsk = W3Utils(config.rsk, logger) 
 

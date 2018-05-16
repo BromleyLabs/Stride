@@ -10,7 +10,7 @@ def main():
         print('Usage: python deploy.py <rsk | eth>')
         exit(0)
 
-    logger = init_logger('DEPLOY')
+    logger = init_logger('DEPLOY', 'stride.log')
     if sys.argv[1] == 'rsk':
         chain = W3Utils(config.rsk, logger)
     elif sys.argv[1] == 'eth':

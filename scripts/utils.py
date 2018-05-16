@@ -7,10 +7,10 @@ import logging
 import json
 import config
 
-def init_logger(module_name):
+def init_logger(module_name, file_name):
     logger = logging.getLogger(module_name)
     logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('log.txt')
+    fh = logging.FileHandler(file_name)
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)

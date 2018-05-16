@@ -8,7 +8,7 @@ from contracts import *
 import json
 
 def main():
-    logger = init_logger('USER')
+    logger = init_logger('USER', 'stride.log')
     rsk = W3Utils(config.rsk, logger)
     eth = W3Utils(config.eth, logger) 
     logger = rsk.logger # Either one. Both point to same logger 
