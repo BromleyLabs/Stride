@@ -15,7 +15,7 @@
 - Run RSK Testnet and Parity Ropsten node
 - Create user, custodian accounts on on both 
 - Unlock all the accounts - in Parity it has to be done while starting the node, while unlocking in RSK is done in the script itself.
-- Get Ether for all accounts from Ropsten Testnet faucet. On Parity, convert some ether to WETH for testing.  This can be done using Ox Protocol page https://0xproject.com/portal/weth. You will need to install Metamask plugin.  And then add users into Metamask. Then useOx page to convert to WETH. Use chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/popup.html to add user in Metamask as importing accounts from Chrome icon does did not work for me. 
+- Get Ether for all accounts from Ropsten Testnet faucet. On Parity, convert some ether to WETH for testing.  This can be done using 0x Protocol page https://0xproject.com/portal/weth. You will need to install Metamask plugin.  And then add users into Metamask. Then useOx page to convert to WETH. Use chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/popup.html to add user in Metamask as importing accounts from Chrome icon does did not work for me. 
 - For RSK, get SBTC using RSK Testnet faucet.   
 
 ## Running scripts
