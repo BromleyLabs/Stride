@@ -25,9 +25,8 @@ class App:
         self.process(body)
 
     def process(self, msg):
-        self.logger.info('Processed: %s' % msg)   
-        #self.collection.insert_one(js)   
-        #self.logger.info('msg saved in DB')
+        self.collection.insert_one(json.loads(msg))   
+        self.logger.info('msg saved in DB')
 
 def main():
     app = App('/tmp/stride.log', 'custodian-q')
