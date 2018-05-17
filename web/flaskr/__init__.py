@@ -20,7 +20,7 @@ def create_app(test_config=None):
         # load the test config if passed in
         app.config.from_mapping(test_config)
 
-    event_q = RabbitMQ('EventQ')
+    event_q = RabbitMQ('custodian-q')
 
     # ensure the instance folder exists
     try:
