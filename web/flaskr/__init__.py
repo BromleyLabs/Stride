@@ -1,9 +1,8 @@
 import os
 import sys
-sys.path.insert(0, '/home/puneet/crypto/stride/scripts')
 from flask import Flask, request, abort 
 import traceback
-import utils
+from utils import *
 import json
 
 def create_app(test_config=None):
@@ -21,13 +20,15 @@ def create_app(test_config=None):
         # load the test config if passed in
         app.config.from_mapping(test_config)
 
+    event_q = RabbitMQ('EventQ')
+
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
     except OSError:
         pass
 
-    logger = utils.init_logger('STRIDE', '/tmp/stride.log')
+    logger = init_logger('STRIDE', '/tmp/stride.log')
     
     # a simple page that says hello
     @app.route('/stride', methods=['POST'])
@@ -36,15 +37,12 @@ def create_app(test_config=None):
            if not request.json:
                logger.info('Request does not have json')
                abort(400) 
-           js = json.loads(request.json)
-           msg_id = js['id']
-           response = {'id' : msg_id, 'result' : 'Done', 'error' : None}
-           return json.dumps(response) 
+           event_q.send(request.json)
+           return ''  # We can retun json string here  
         except:
            exc_type, exc_value, exc_tb = sys.exc_info()
            logger.error(repr(traceback.format_exception(exc_type, exc_value,
                                           exc_tb)))
-
            abort(400)
 
     return app
