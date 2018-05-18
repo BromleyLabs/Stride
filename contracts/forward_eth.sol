@@ -6,7 +6,7 @@ import "erc20.sol";
 import "ebtc_token.sol";
 import "mortal.sol";
 
-contract StrideEthContract is mortal {
+contract ForwardEthContract is mortal {
     using SafeMath for uint;
 
     enum TxnStates {UNINITIALIZED, CREATED, EXECUTED, REFUNDED}
