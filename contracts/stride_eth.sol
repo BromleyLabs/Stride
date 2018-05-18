@@ -24,7 +24,7 @@ contract StrideEthContract is mortal {
     }  /* TODO: What is the cost of this storage? */
 
     mapping (uint => ForwardTxn) public m_txns; 
-    address constant m_ebtc_token_addr = 0x0; /* TODO */ 
+    address m_ebtc_token_addr; /* Set by method below */ 
     uint m_eth_ebtc_ratio_numerator = 15; 
     uint m_eth_ebtc_ratio_denominator = 1;
 
@@ -33,6 +33,11 @@ contract StrideEthContract is mortal {
     event UserExecutionSuccess(uint txn_id);
     event RefundedToCustodian(uint txn_id);
    
+    function set_ebtc_token_address(address addr) public {
+        require(msg.sender == m_owner, "Only owner can set this");
+        m_ebtc_token_addr = addr; 
+    } 
+
     function set_eth_ebtc_ratio(uint numerator, uint denominator) public {
         require(msg.sender == m_owner, "Only owner can set this");
         m_eth_ebtc_ratio_numerator = numerator;

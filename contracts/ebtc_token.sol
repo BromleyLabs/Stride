@@ -23,7 +23,7 @@ contract EBTCToken is ERC20Interface, mortal {
         m_name = "Stride Ethereum Bitcoin Token";
         m_decimals = 18;
         m_total_supply =  0;  /* Issue fresh tokens only when needed */
-        m_issuer = 0x0; /* TODO: This should be Stride contract address */
+        m_issuer = 0x0; /* Set by function below */ 
     }
 
     function setIssuer (address issuer) public {
