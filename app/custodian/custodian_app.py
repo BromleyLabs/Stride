@@ -27,6 +27,9 @@ class App:
     def process(self, msg):
         self.collection.insert_one(json.loads(msg))   
         self.logger.info('msg saved in DB')
+        # TODO: For first few steps of Atomic Swap custodian must verify that
+        # the txn_id being used by the user for contract is same as what 
+        # custodian has in DB, otherwise, pwd hash may not match
 
 def main():
     app = App('/tmp/stride.log', 'custodian-q')

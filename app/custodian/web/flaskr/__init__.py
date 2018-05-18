@@ -48,6 +48,8 @@ def create_app(test_config=None):
                logger.info('Request does not have json')
                abort(400) 
            js = json.loads(request.json)
+           # TODO: User must also send a txn_id with this request, and the same
+           # id must be used for all contract methods  
            if verify_request(js):           
                pwd_str, pwd_hash = eth.generate_random_string(4)
                js['pwd'] = pwd_str
