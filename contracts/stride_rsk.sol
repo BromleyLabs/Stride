@@ -82,6 +82,11 @@ contract UserRSKContract is mortal {
         to.transfer(sbtc_amount);
     }
 
+    function rev_force_execute() public { /* By user if custodian does not call rev_excecute()  */
+        if txn 
+
+    }
+
 }
 
 
