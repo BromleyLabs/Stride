@@ -11,12 +11,13 @@ contract EBTCToken is ERC20Interface, mortal {
     string public  m_name;
     uint8 public m_decimals;
     uint public m_total_supply;
-    address public m_issuer; /* Issuer of fresh tokens */
+    address public m_issuer; /* Issuer of fresh tokens - Stride Eth Contract in this case */
 
     mapping(address => uint) balances;
     mapping(address => mapping(address => uint)) allowed;
     
     event Issued(uint tokens);
+    event Burned(uint tokens);
 
     constructor() public {  /* Constructor */
         m_symbol = "EBTC";
@@ -65,6 +66,14 @@ contract EBTCToken is ERC20Interface, mortal {
         balances[to] = balances[to].add(tokens);
         m_total_supply = m_total_supply.add(tokens);
         emit Issued(tokens);
+        return true;
+    }
+
+    function burnTokens(uint tokens) public returns (bool success) {
+        require(msg.sender == m_issuer, "Only issuer can issue fresh tokens");     
+        balances[msg.sender] = balances[msg.sender].sub(tokens);
+        m_total_supply = m_total_supply.sub(tokens);
+        emit Burned(tokens);
         return true;
     }
  
