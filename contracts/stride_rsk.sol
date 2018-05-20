@@ -9,7 +9,7 @@ import "safe_math.sol";
 contract StrideRSKContract is mortal {
     using SafeMath for uint;
 
-    enum FwdTxnStates {UNINITIALIZED, CREATED, TRANSFERRED, EXECUTED, REFUNDED}
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, EXECUTED, REFUNDED}
     enum RevTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}  
 
     struct ForwardTxn {  /* SBTC -> EBTC Transaction */
@@ -39,8 +39,7 @@ contract StrideRSKContract is mortal {
     uint m_locked_sbtc = 0;
     uint m_sbtc_lock_interval = 100;  /* In blocks */
 
-    event FwdUserTransactionCreated(uint txn_id, address user_rsk, address custodian_rsk);
-    event FwdUserTransferred(uint txn_id);
+    event FwdUserDeposited(uint txn_id);
     event FwdCustodianExecutionSuccess(uint txn_id, string pwd_str); 
     event FwdRefundedToUser(uint txn_id);
 
@@ -53,32 +52,22 @@ contract StrideRSKContract is mortal {
         m_custodian_rsk = addr;
     }
 
-    /* Called by user */
-    function fwd_create_transaction(uint txn_id, bytes32 custodian_pwd_hash, 
-                                uint timeout_interval, uint sbtc_amount) public {
+    /* Called by user.  Transfer SBTC to contract */
+    function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
+                                uint timeout_interval) public payable {
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
+        require(msg.value > 0, "SBTC cannot be 0"); /* NOTE: custodian may want to check if this amount is as per agreed while hash off-chain transaction */
+
         m_fwd_txns[txn_id] = ForwardTxn(txn_id, msg.sender, custodian_pwd_hash, timeout_interval,
-                                    block.number, sbtc_amount, FwdTxnStates.CREATED);
-        emit FwdUserTransactionCreated(txn_id, msg.sender, m_custodian_rsk);
+                                    block.number, msg.value, FwdTxnStates.DEPOSITED);
+        emit FwdUserDeposited(txn_id);
     }
 
-    /* Called by user. Send SBTC to contract */
-    function fwd_transfer_to_contract(uint txn_id) public payable { 
-        ForwardTxn memory txn = m_fwd_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
-        require(msg.sender == txn.user_rsk);
-        require(txn.state == FwdTxnStates.CREATED);
-        require(msg.value == txn.sbtc_amount, "Sent SBTC amount does not match"); 
- 
-        txn.state = FwdTxnStates.TRANSFERRED;
-
-        emit FwdUserTransferred(txn_id);
-    }
-
-    /* Called by custodian. Send password string to user */ 
+    /* Called by custodian. Send password string to user. */
     function fwd_execute(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
-        require(txn.state == FwdTxnStates.TRANSFERRED, "Transaction not in TRANSFERRED state");
+        require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state");
         require(block.number <= (txn.creation_block + txn.timeout_interval));
         require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
   
@@ -92,7 +81,7 @@ contract StrideRSKContract is mortal {
     function fwd_request_refund(uint txn_id) public {
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_rsk, "Only user can call this"); 
-        require(txn.state == FwdTxnStates.TRANSFERRED, "Transaction not in TRANSFERRED state"); 
+        require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
 
         txn.user_rsk.transfer(txn.sbtc_amount);

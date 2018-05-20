@@ -9,7 +9,7 @@ import "mortal.sol";
 contract StrideEthContract is mortal {
     using SafeMath for uint;
 
-    enum FwdTxnStates {UNINITIALIZED, CREATED, EXECUTED, REFUNDED}
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, EXECUTED, REFUNDED}
     enum RevTxnStates {UNINITIALIZED, DEPOSITED, HASH_ADDED, SECURITY_RECOVERED, CHALLENGED}
 
     struct ForwardTxn { /* SBTC -> EBTC Transaction */
@@ -46,7 +46,7 @@ contract StrideEthContract is mortal {
     uint m_ether_lock_interval = 100; /* In blocks */
     uint m_locked_eth = 0;
 
-    event FwdCustodianTransferred(uint txn_id);
+    event FwdCustodianDeposited(uint txn_id);
     event FwdUserExecutionSuccess(uint txn_id);
     event FwdRefundedToCustodian(uint txn_id);
 
@@ -87,7 +87,7 @@ contract StrideEthContract is mortal {
     }
 
     /* Called by custodian. Send collateral Eth to contract */
-    function fwd_create_transaction(uint txn_id, address user_eth, bytes32 custodian_pwd_hash, 
+    function fwd_deposit(uint txn_id, address user_eth, bytes32 custodian_pwd_hash, 
                                     uint timeout_interval, uint ebtc_amount) public payable {
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         require(msg.sender == m_custodian_eth);
@@ -95,16 +95,16 @@ contract StrideEthContract is mortal {
         require(msg.value == collateral_eth); 
 
         m_fwd_txns[txn_id] = ForwardTxn(txn_id, user_eth, custodian_pwd_hash, timeout_interval,
-                                    block.number, ebtc_amount, collateral_eth, FwdTxnStates.CREATED);
+                                    block.number, ebtc_amount, collateral_eth, FwdTxnStates.DEPOSITED);
         
-        emit FwdCustodianTransferred(txn_id); 
+        emit FwdCustodianDeposited(txn_id); 
     }
 
     /* Called by user */
     function fwd_execute(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_eth, "Only user can call this"); 
-        require(txn.state == FwdTxnStates.CREATED, "Transaction not in CREATED state");
+        require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state");
         require(block.number <= (txn.creation_block + txn.timeout_interval));
         require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
 
@@ -117,7 +117,7 @@ contract StrideEthContract is mortal {
     function fwd_request_refund(uint txn_id) public { /* Called by custodian */
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_eth, "Only custodian can call this"); 
-        require(txn.state == FwdTxnStates.CREATED, "Transaction not in CREATED state"); 
+        require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
         m_custodian_eth.transfer(txn.collateral_eth);
         txn.state = FwdTxnStates.REFUNDED;
