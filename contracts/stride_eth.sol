@@ -54,6 +54,7 @@ contract StrideEthContract is mortal {
     event RevHashAdded(uint txn_id);
     event RevCustodianSecurityRecovered(uint txn_id, bytes ack_str);
     event RevUserChallengeAccepted(uint txn_id);
+    event RevCustodianChallengeAccepted(uint txn_id);
    
     function set_custodian(address addr) public {
         require(msg.sender == m_owner);
@@ -128,13 +129,14 @@ contract StrideEthContract is mortal {
     /* Called by user */
     function rev_request_redemption(uint txn_id, address dest_rsk_addr, uint ebtc_amount) public { 
         /* User creates a unique redemption id */
-        /* Assuming this contract has been given approval to move funds */ 
+        require(txn_id > 0);
         require(m_rev_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         uint security_eth =  (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).div(m_eth_ebtc_ratio_denominator); 
         require(address(this).balance.sub(m_locked_eth) >= security_eth); 
 
-        EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, this, ebtc_amount);
-        EBTCToken(m_ebtc_token_addr).burnTokens(ebtc_amount);
+        /* Assuming this contract has been given approval to move funds */ 
+        require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, this, ebtc_amount));
+        require(EBTCToken(m_ebtc_token_addr).burnTokens(ebtc_amount));
         
         m_locked_eth += security_eth;  /* Lock Ether */
         m_rev_txns[txn_id] = ReverseTxn(txn_id, msg.sender, dest_rsk_addr, ebtc_amount, 
@@ -168,15 +170,27 @@ contract StrideEthContract is mortal {
        emit RevCustodianSecurityRecovered(txn_id, ack_str);
    } 
 
-   
-   /* Called by user */
-   function rev_no_action_challenge(uint txn_id) public { 
+   /* Called by custodian if no action by user */
+   function rev_no_user_action_challenge(uint txn_id) public {
+       ReverseTxn memory txn = m_rev_txns[txn_id];
+       require(msg.sender == m_custodian_eth);
+       require(txn.state == RevTxnStates.DEPOSITED);
+       require(block.number > txn.creation_block + m_ether_lock_interval); 
+
+       m_custodian_eth.transfer(txn.security_eth); 
+       m_locked_eth -= txn.security_eth; /* Unlock Ether */
+
+       emit RevCustodianChallengeAccepted(txn_id);
+   }
+
+   /* Called by user if no action has been taken by custodian */
+   function rev_no_custodian_action_challenge(uint txn_id) public { 
        ReverseTxn memory txn = m_rev_txns[txn_id];
        require(msg.sender == txn.user_eth);
-       require(txn.state == RevTxnStates.DEPOSITED || txn.state == RevTxnStates.HASH_ADDED);
+       require(txn.state == RevTxnStates.DEPOSITED);
        require(block.number > txn.creation_block + m_ether_lock_interval); 
        
-       txn.user_eth.transfer(txn.security_eth);
+       txn.user_eth.transfer(txn.security_eth); /* penalty */
        txn.state = RevTxnStates.CHALLENGED;
 
        emit RevUserChallengeAccepted(txn_id);
