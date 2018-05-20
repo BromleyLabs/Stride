@@ -55,6 +55,7 @@ contract StrideRSKContract is mortal {
     /* Called by user.  Transfer SBTC to contract */
     function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval) public payable {
+        require(txn_id > 0);
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         require(msg.value > 0, "SBTC cannot be 0"); /* NOTE: custodian may want to check if this amount is as per agreed while hash off-chain transaction */
 
@@ -109,6 +110,7 @@ contract StrideRSKContract is mortal {
         ReverseTxn memory txn = m_rev_txns[txn_id];
         require(msg.sender == txn.user_rsk); 
         require(txn.ack_hash == keccak256(ack_str)); 
+        require(block.number <= txn.creation_block + m_sbtc_lock_interval);  /* Within certain time period */
        
         txn.dest_rsk_addr.transfer(txn.sbtc_amount);
         txn.state = RevTxnStates.TRANSFERRED; 
