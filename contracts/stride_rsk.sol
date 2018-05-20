@@ -10,9 +10,9 @@ contract StrideRSKContract is mortal {
     using SafeMath for uint;
 
     enum FwdTxnStates {UNINITIALIZED, CREATED, TRANSFERRED, EXECUTED, REFUNDED}
-    enum RevTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CUSTODIAN_CHALLENGE_ACCEPTED}  
+    enum RevTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}  
 
-    struct ForwardTxn {
+    struct ForwardTxn {  /* SBTC -> EBTC Transaction */
         uint txn_id; 
         address user_rsk; /* RSK address */
         bytes32 custodian_pwd_hash; /* Custodian password hash */
@@ -22,7 +22,7 @@ contract StrideRSKContract is mortal {
         FwdTxnStates state;
     } 
 
-    struct ReverseTxn {
+    struct ReverseTxn {  /* EBTC -> SBTC Transaction */
         uint txn_id; 
         address user_rsk;
         address dest_rsk_addr;
@@ -53,15 +53,17 @@ contract StrideRSKContract is mortal {
         m_custodian_rsk = addr;
     }
 
+    /* Called by user */
     function fwd_create_transaction(uint txn_id, bytes32 custodian_pwd_hash, 
-                                uint timeout_interval, uint sbtc_amount) public { /* By user */
+                                uint timeout_interval, uint sbtc_amount) public {
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         m_fwd_txns[txn_id] = ForwardTxn(txn_id, msg.sender, custodian_pwd_hash, timeout_interval,
                                     block.number, sbtc_amount, FwdTxnStates.CREATED);
         emit FwdUserTransactionCreated(txn_id, msg.sender, m_custodian_rsk);
     }
 
-    function fwd_transfer_to_contract(uint txn_id) public payable { /* To be called by user */
+    /* Called by user. Send SBTC to contract */
+    function fwd_transfer_to_contract(uint txn_id) public payable { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; /* Convenience. TODO: Check if this is reference or a copy */
         require(msg.sender == txn.user_rsk);
         require(txn.state == FwdTxnStates.CREATED);
@@ -72,8 +74,8 @@ contract StrideRSKContract is mortal {
         emit FwdUserTransferred(txn_id);
     }
 
-    /* This function main job is to send password string to user */ 
-    function fwd_execute(uint txn_id, string pwd_str) public { /* Called by custodian */
+    /* Called by custodian. Send password string to user */ 
+    function fwd_execute(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.TRANSFERRED, "Transaction not in TRANSFERRED state");
@@ -86,8 +88,8 @@ contract StrideRSKContract is mortal {
         emit FwdCustodianExecutionSuccess(txn_id, pwd_str);
     }
 
-    /* Refund in case no action by Custodian */ 
-    function fwd_request_refund(uint txn_id) public { /* Called by user */
+    /* Called by user. Refund in case no action by Custodian */ 
+    function fwd_request_refund(uint txn_id) public {
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_rsk, "Only user can call this"); 
         require(txn.state == FwdTxnStates.TRANSFERRED, "Transaction not in TRANSFERRED state"); 
@@ -99,19 +101,22 @@ contract StrideRSKContract is mortal {
         emit FwdRefundedToUser(txn_id);
     }
 
+    /* Called by custodian. Send enough SBTCs to contract to pay to user. */
     function rev_deposit(uint txn_id, address user_rsk, address dest_rsk_addr, uint sbtc_amount,
-                         bytes32 ack_hash) payable public {  /* Called by custodian */
+                         bytes32 ack_hash) payable public {  
         /* The custodian should pay enough so that lock amount is covered */
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
         require(address(this).balance.sub(m_locked_sbtc) >= sbtc_amount); 
         m_locked_sbtc += sbtc_amount;
 
-        m_rev_txns[txn_id] = ReverseTxn(txn_id, user_rsk, dest_rsk_addr, ack_hash, sbtc_amount, block.number, RevTxnStates.DEPOSITED); 
+        m_rev_txns[txn_id] = ReverseTxn(txn_id, user_rsk, dest_rsk_addr, ack_hash, sbtc_amount, 
+                                        block.number, RevTxnStates.DEPOSITED); 
          
         emit RevCustodianDeposited(txn_id, ack_hash); 
     }
 
-    function rev_transfer(uint txn_id, bytes ack_str) public { /* Called by user */
+    /* Called by user.  Transfer SBTCs to destination address */
+    function rev_transfer(uint txn_id, bytes ack_str) public { 
         ReverseTxn memory txn = m_rev_txns[txn_id];
         require(msg.sender == txn.user_rsk); 
         require(txn.ack_hash == keccak256(ack_str)); 
@@ -122,15 +127,16 @@ contract StrideRSKContract is mortal {
         emit RevTransferredToUser(txn_id);
     } 
 
-    function rev_challenge(uint txn_id) public { /* Called by custodian if user hasn't acted for a while */
+    /* Called by custodian. Recover custodian's SBTCs if user hasn't acted for a while. */
+    function rev_challenge(uint txn_id) public { 
         ReverseTxn memory txn = m_rev_txns[txn_id];
         require(msg.sender == m_custodian_rsk); 
         require(block.number > txn.creation_block + m_sbtc_lock_interval); 
         require(txn.state == RevTxnStates.DEPOSITED);
          
-        m_custodian_rsk.transfer(txn.sbtc_amount); /* TODO: Check if transfer() fails, the whole transaction is reverted */
+        m_custodian_rsk.transfer(txn.sbtc_amount); 
         m_locked_sbtc -= txn.sbtc_amount;
-        txn.state = RevTxnStates.CUSTODIAN_CHALLENGE_ACCEPTED;
+        txn.state = RevTxnStates.CHALLENGED;
 
         emit RevCustodianChallengeAccepted(txn_id);
     }

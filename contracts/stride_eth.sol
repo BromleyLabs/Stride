@@ -10,23 +10,23 @@ contract StrideEthContract is mortal {
     using SafeMath for uint;
 
     enum FwdTxnStates {UNINITIALIZED, CREATED, EXECUTED, REFUNDED}
-    enum RevTxnStates {UNINITIALIZED, DEPOSITED, HASH_ADDED, SECURITY_RECOVERED, USER_CHALLENGE_ACCEPTED}
+    enum RevTxnStates {UNINITIALIZED, DEPOSITED, HASH_ADDED, SECURITY_RECOVERED, CHALLENGED}
 
-    struct ForwardTxn { /* from SBTC -> EBTC */
+    struct ForwardTxn { /* SBTC -> EBTC Transaction */
         uint txn_id; 
         address user_eth; 
         bytes32 custodian_pwd_hash; /* Custodian password hash */
-        uint timeout_interval; /* Blocks. Arbitary */ 
-        uint creation_block; 
+        uint timeout_interval; /* Blocks */
+        uint creation_block; /* When this transaction was created */ 
         uint ebtc_amount; 
         uint collateral_eth; /* Calculated */
         FwdTxnStates state;
     }  /* TODO: What is the cost of this storage? */
 
-    struct ReverseTxn { /* from EBTC -> SBTC */
+    struct ReverseTxn { /* EBTC -> SBTC transaction */
         uint txn_id;
         address user_eth;
-        address dst_rsk; 
+        address dst_rsk; /* Destination address on RSK */ 
         uint ebtc_amount;  
         uint creation_block;
         bytes32 ack_hash;
@@ -86,8 +86,9 @@ contract StrideEthContract is mortal {
         m_max_ack_delay = nblocks; 
     }
 
+    /* Called by custodian. Send collateral Eth to contract */
     function fwd_create_transaction(uint txn_id, address user_eth, bytes32 custodian_pwd_hash, 
-                                uint timeout_interval, uint ebtc_amount) public payable { /* Called by custodian */
+                                    uint timeout_interval, uint ebtc_amount) public payable {
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         require(msg.sender == m_custodian_eth);
         uint collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).div(m_eth_ebtc_ratio_denominator); 
@@ -99,7 +100,8 @@ contract StrideEthContract is mortal {
         emit FwdCustodianTransferred(txn_id); 
     }
 
-    function fwd_execute(uint txn_id, string pwd_str) public { /* Called by user */
+    /* Called by user */
+    function fwd_execute(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_eth, "Only user can call this"); 
         require(txn.state == FwdTxnStates.CREATED, "Transaction not in CREATED state");
@@ -123,7 +125,8 @@ contract StrideEthContract is mortal {
         emit FwdRefundedToCustodian(txn_id);
     }
 
-    function rev_request_redemption(uint txn_id, address dest_rsk_addr, uint ebtc_amount) public { /* Called by user */
+    /* Called by user */
+    function rev_request_redemption(uint txn_id, address dest_rsk_addr, uint ebtc_amount) public { 
         /* User creates a unique redemption id */
         /* Assuming this contract has been given approval to move funds */ 
         require(m_rev_txns[txn_id].txn_id != txn_id, "Transaction already exists");
@@ -140,7 +143,8 @@ contract StrideEthContract is mortal {
         emit RevRedemptionInitiated(txn_id, dest_rsk_addr);
     } 
 
-   function rev_add_hash(uint txn_id, bytes32 ack_hash) public { /* Called by user */
+   /* Called by user */
+   function rev_add_hash(uint txn_id, bytes32 ack_hash) public { 
        ReverseTxn memory txn = m_rev_txns[txn_id];
        require(msg.sender == txn.user_eth);
        require(txn.state == RevTxnStates.DEPOSITED);
@@ -150,7 +154,8 @@ contract StrideEthContract is mortal {
        emit RevHashAdded(txn_id);
    } 
     
-   function rev_recover_security_deposit(uint txn_id, bytes ack_str) public { /* Called by custodian */
+   /* Called by custodian */ 
+   function rev_recover_security_deposit(uint txn_id, bytes ack_str) public {
        ReverseTxn memory txn = m_rev_txns[txn_id];
        require(msg.sender == m_custodian_eth);
        require(txn.state == RevTxnStates.HASH_ADDED);
@@ -163,14 +168,16 @@ contract StrideEthContract is mortal {
        emit RevCustodianSecurityRecovered(txn_id, ack_str);
    } 
 
-   function rev_no_action_challenge(uint txn_id) public {  /* Called by user if custodian has not taken any action to give SBTC to user */ 
+   
+   /* Called by user */
+   function rev_no_action_challenge(uint txn_id) public { 
        ReverseTxn memory txn = m_rev_txns[txn_id];
        require(msg.sender == txn.user_eth);
        require(txn.state == RevTxnStates.DEPOSITED || txn.state == RevTxnStates.HASH_ADDED);
        require(block.number > txn.creation_block + m_ether_lock_interval); 
        
        txn.user_eth.transfer(txn.security_eth);
-       txn.state = RevTxnStates.USER_CHALLENGE_ACCEPTED;
+       txn.state = RevTxnStates.CHALLENGED;
 
        emit RevUserChallengeAccepted(txn_id);
    }
