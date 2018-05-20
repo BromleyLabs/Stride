@@ -41,8 +41,6 @@ contract StrideEthContract is mortal {
     address m_ebtc_token_addr; /* Set by method below */ 
     uint m_eth_ebtc_ratio_numerator = 15; 
     uint m_eth_ebtc_ratio_denominator = 1;
-    uint public m_penalty; /* Custodian penalty in Eth for reverse txn for not sending ack to user */ 
-    uint m_max_ack_delay = 200; /* In blocks. Ack has to be sent by custodian within so many block numbers */
     uint m_ether_lock_interval = 100; /* In blocks */
     uint m_locked_eth = 0;
 
@@ -70,21 +68,6 @@ contract StrideEthContract is mortal {
         require(msg.sender == m_owner, "Only owner can set this");
         m_eth_ebtc_ratio_numerator = numerator;
         m_eth_ebtc_ratio_denominator = denominator;
-    }
-
-    function set_ebtc_token_addr(address addr) public {
-        require(msg.sender == m_owner);
-        m_ebtc_token_addr = addr;
-    }
-
-    function set_penalty(uint amount) public {
-        require(msg.sender == m_owner, "Only owner can set penalty");  
-        m_penalty = amount;
-    }
-
-    function set_max_ack_delay(uint nblocks) public {
-        require(msg.sender == m_owner, "Only owner can set max_ack_delay");  
-        m_max_ack_delay = nblocks; 
     }
 
     /* Called by custodian. Send collateral Eth to contract */
