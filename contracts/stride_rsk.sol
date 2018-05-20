@@ -9,7 +9,7 @@ import "safe_math.sol";
 contract StrideRSKContract is mortal {
     using SafeMath for uint;
 
-    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, EXECUTED, REFUNDED}
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}
     enum RevTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}  
 
     struct ForwardTxn {  /* SBTC -> EBTC Transaction */
@@ -41,7 +41,7 @@ contract StrideRSKContract is mortal {
 
     event FwdUserDeposited(uint txn_id);
     event FwdCustodianExecutionSuccess(uint txn_id, string pwd_str); 
-    event FwdRefundedToUser(uint txn_id);
+    event FwdUserChallengeAccepted(uint txn_id);
 
     event RevCustodianDeposited(uint txn_id, bytes32 ack_hash); 
     event RevTransferredToUser(uint txn_id);
@@ -65,7 +65,7 @@ contract StrideRSKContract is mortal {
     }
 
     /* Called by custodian. Send password string to user. */
-    function fwd_execute(uint txn_id, string pwd_str) public { 
+    function fwd_transfer(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state");
@@ -73,22 +73,22 @@ contract StrideRSKContract is mortal {
         require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
   
         m_custodian_rsk.transfer(txn.sbtc_amount);
-        txn.state = FwdTxnStates.EXECUTED;
+        txn.state = FwdTxnStates.TRANSFERRED;
 
         emit FwdCustodianExecutionSuccess(txn_id, pwd_str);
     }
 
     /* Called by user. Refund in case no action by Custodian */ 
-    function fwd_request_refund(uint txn_id) public {
+    function fwd_no_custodian_action_challenge(uint txn_id) public {
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_rsk, "Only user can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
 
         txn.user_rsk.transfer(txn.sbtc_amount);
-        txn.state = FwdTxnStates.REFUNDED;
+        txn.state = FwdTxnStates.CHALLENGED;
 
-        emit FwdRefundedToUser(txn_id);
+        emit FwdUserChallengeAccepted(txn_id);
     }
 
     /* Called by custodian. Send enough SBTCs to contract to pay to user. */

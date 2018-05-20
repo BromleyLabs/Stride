@@ -9,7 +9,7 @@ import "mortal.sol";
 contract StrideEthContract is mortal {
     using SafeMath for uint;
 
-    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, EXECUTED, REFUNDED}
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, ISSUED, CHALLENGED}
     enum RevTxnStates {UNINITIALIZED, DEPOSITED, HASH_ADDED, SECURITY_RECOVERED, CHALLENGED}
 
     struct ForwardTxn { /* SBTC -> EBTC Transaction */
@@ -47,8 +47,8 @@ contract StrideEthContract is mortal {
     uint m_locked_eth = 0;
 
     event FwdCustodianDeposited(uint txn_id);
-    event FwdUserExecutionSuccess(uint txn_id);
-    event FwdRefundedToCustodian(uint txn_id);
+    event FwdEBTCIssued(uint txn_id);
+    event FwdCustodianChallengeAccepted(uint txn_id);
 
     event RevRedemptionInitiated(uint txn_id, address dest_rsk_addr);
     event RevHashAdded(uint txn_id);
@@ -101,8 +101,8 @@ contract StrideEthContract is mortal {
         emit FwdCustodianDeposited(txn_id); 
     }
 
-    /* Called by user */
-    function fwd_execute(uint txn_id, string pwd_str) public { 
+    /* Called by user.  Issue EBTCs to user */
+    function fwd_issue(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_eth, "Only user can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state");
@@ -110,20 +110,22 @@ contract StrideEthContract is mortal {
         require(txn.custodian_pwd_hash == keccak256(pwd_str), "Hash does not match");
 
         require(EBTCToken(m_ebtc_token_addr).issueFreshTokens(txn.user_eth, txn.ebtc_amount));
-        txn.state = FwdTxnStates.EXECUTED;
+        txn.state = FwdTxnStates.ISSUED;
 
-        emit FwdUserExecutionSuccess(txn_id);
+        emit FwdEBTCIssued(txn_id);
     }
 
-    function fwd_request_refund(uint txn_id) public { /* Called by custodian */
+    /* Called by custodian when no user action */
+    function fwd_no_user_action_challenge(uint txn_id) public {
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_eth, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
-        m_custodian_eth.transfer(txn.collateral_eth);
-        txn.state = FwdTxnStates.REFUNDED;
 
-        emit FwdRefundedToCustodian(txn_id);
+        m_custodian_eth.transfer(txn.collateral_eth);
+        txn.state = FwdTxnStates.CHALLENGED;
+
+        emit FwdCustodianChallengeAccepted(txn_id);
     }
 
     /* Called by user */
