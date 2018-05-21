@@ -7,7 +7,8 @@ import pika
 import logging 
 import json
 import random
-from custodian import config
+import os
+from common import config
 
 def init_logger(module_name, file_name):
     logger = logging.getLogger(module_name)
@@ -164,19 +165,24 @@ class W3Utils:
         for a in accounts_list:
             self.w3.personal.unlockAccount(a, pwd) 
 
-    def deploy(self):
+    def deploy(self, contract_name):
         conf = self.chain_config
-        self.logger.info('Deploying contract on %s' % conf.name)
-        abi = open(conf.abi_file, 'rt').read()
-        bytecode = '0x' + open(conf.bin_file, 'rt').read() 
+        self.logger.info('Deploying contract %s on %s' % (contract_name, conf.name)) 
+        abi_file = os.path.join(conf.contract_path, contract_name + '.abi')
+        bin_file = os.path.join(conf.contract_path, contract_name + '.bin')
+        abi = open(abi_file, 'rt').read()
+        bytecode = '0x' + open(bin_file, 'rt').read() 
         contract = self.w3.eth.contract(abi = abi, bytecode = bytecode)
-        tx_hash = contract.deploy(transaction = {'from' : conf.contract_owner, 
-                                    'gas' : conf.gas, 'gasPrice' : conf.gas_price}) 
+        tx_hash = contract.constructor().transact({'from' : conf.contract_owner, 
+                                         'gas' : conf.gas, 
+                                         'gasPrice' : conf.gas_price}) 
         return self.wait_to_be_mined(tx_hash)
 
-    def kill(self):
+    def kill(self, contract_name):
         conf = self.chain_config
-        self.logger.info('Killing contract on %s' % conf.name)
+        self.logger.info('Killing contract %s on %s' % (contract_name, conf.name)) 
+        abi_file = os.path.join(conf.contract_path, contract_name + '.abi')
+        bin_file = os.path.join(conf.contract_path, contract_name + '.bin')
         abi = open(conf.abi_file, 'rt').read() 
         contract = self.w3.eth.contract(abi = abi, address = conf.contract_addr)
         concise = ConciseContract(contract)
