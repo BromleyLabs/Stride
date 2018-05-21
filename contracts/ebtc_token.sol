@@ -1,10 +1,10 @@
 pragma solidity ^0.4.23;
 
 import "safe_math.sol";
-import "erc20.sol";
 import "mortal.sol";
 
-contract EBTCToken is ERC20Interface, mortal {
+/* Compliant to ERC20 token */
+contract EBTCToken is mortal {
     using SafeMath for uint;
 
     string public m_symbol;
@@ -15,7 +15,9 @@ contract EBTCToken is ERC20Interface, mortal {
 
     mapping(address => uint) balances;
     mapping(address => mapping(address => uint)) allowed;
-    
+
+    event Transfer(address indexed from, address indexed to, uint tokens);
+    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
     event Issued(uint tokens);
     event Burned(uint tokens);
 

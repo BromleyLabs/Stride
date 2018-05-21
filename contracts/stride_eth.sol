@@ -70,6 +70,11 @@ contract StrideEthContract is mortal {
         m_eth_ebtc_ratio_denominator = denominator;
     }
 
+    function set_lock_interval(uint nblocks) public {
+        require(msg.sender == m_owner, "Only owner can set this");
+        m_ether_lock_interval = nblocks;
+    }
+
     /* Called by custodian. Send collateral Eth to contract */
     function fwd_deposit(uint txn_id, address user_eth, bytes32 custodian_pwd_hash, 
                                     uint timeout_interval, uint ebtc_amount) public payable {

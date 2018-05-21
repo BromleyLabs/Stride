@@ -52,6 +52,11 @@ contract StrideRSKContract is mortal {
         m_custodian_rsk = addr;
     }
 
+    function set_lock_interval(uint nblocks) public {
+        require(msg.sender == m_owner, "Only owner can set this");
+        m_sbtc_lock_interval = nblocks;
+    }
+
     /* Called by user.  Transfer SBTC to contract */
     function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval) public payable {
