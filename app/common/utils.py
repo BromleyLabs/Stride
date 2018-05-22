@@ -69,13 +69,24 @@ class W3Utils:
     def __init__(self, chain_config, logger):
         self.logger = logger
         self.w3 = Web3(Web3.HTTPProvider(chain_config.rpc_addr))
-        self.chain_config = chain_config
+        self.chain = chain_config
         if chain_config == config.rsk: 
-            self.unlock_accounts([self.chain_config.contract_owner, 
-                                  self.chain_config.user, 
-                                  self.chain_config.custodian], "puneet")
+            self.unlock_accounts([self.chain.contract_owner, 
+                                  self.chain.user, 
+                                  self.chain.custodian], "puneet")
         # Parity accounts assumed to be unlocked while running the node
      
+    def init_contract(self, contract_name):
+        abi_file = os.path.join(self.chain.contract_path, 
+                                contract_name + '.abi')
+        bin_file = os.path.join(self.chain.contract_path, 
+                                contract_name + '.bin')
+        abi = open(abi_file, 'rt').read()
+        contract = self.w3.eth.contract(abi = abi, 
+                                        address = self.chain.contract_addr) 
+        concise = ConciseContract(contract)
+        return contract, concise
+
     def checksum(self, addr):
         if not self.w3.isChecksumAddress(addr):
             return self.w3.toChecksumAddress(addr)
@@ -131,26 +142,9 @@ class W3Utils:
                                             'gasPrice': gas_price}) 
         return self.wait_to_be_mined(tx_hash)
 
-    def expect_msg(self, q, msg_type, txn_id):
-        js = {}
-        while 1:
-            msg = q.read() 
-            if msg is None:
-                self.logger.error('Did not receive msg. Timedout.') 
-                break
-            msg = msg.decode('utf-8') 
-            js = json.loads(msg)
-            if txn_id is None:
-                if js['type'] == msg_type: 
-                    break
-            else:   
-                if js['txn_id'] == txn_id and js['type'] == msg_type: 
-                    break
-        return js
-
-    def wait_for_event(self, event_filter, txn_id):
+    def wait_for_event(self, event_filter, txn_id)
         found = False
-        while not found: 
+        while not found and n < timeout: 
             events = event_filter.get_new_entries()
             for event in events:
                 if event['args']['txn_id'] == txn_id:

@@ -2,8 +2,8 @@ import os
 import sys
 from flask import Flask, request, abort 
 import traceback
-from custodian.utils import *
-from custodian import config
+from common.utils import *
+from common import config
 import json
 import datetime
 
@@ -47,7 +47,8 @@ def create_app(test_config=None):
            if not request.json:
                logger.info('Request does not have json')
                abort(400) 
-           js = json.loads(request.json)
+           js = request.json
+           logger.info('Received %s' % js)
            # TODO: User must also send a txn_id with this request, and the same
            # id must be used for all contract methods  
            if verify_request(js):           
