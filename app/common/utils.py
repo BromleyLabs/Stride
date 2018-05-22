@@ -76,14 +76,12 @@ class W3Utils:
                                   self.chain.custodian], "puneet")
         # Parity accounts assumed to be unlocked while running the node
      
-    def init_contract(self, contract_name):
+    def init_contract(self, contract_name, contract_addr):
         abi_file = os.path.join(self.chain.contract_path, 
                                 contract_name + '.abi')
-        bin_file = os.path.join(self.chain.contract_path, 
-                                contract_name + '.bin')
         abi = open(abi_file, 'rt').read()
         contract = self.w3.eth.contract(abi = abi, 
-                                        address = self.chain.contract_addr) 
+                                        address = contract_addr) 
         concise = ConciseContract(contract)
         return contract, concise
 
@@ -114,7 +112,7 @@ class W3Utils:
         # timeout in nblocks
         self.logger.info('Tx hash: %s' % HexBytes(tx_hash).hex())
         self.logger.info('Waiting for transaction to get mined')
-        start = w3.eth.blockNumber
+        start = self.w3.eth.blockNumber
         mined = False 
         while self.w3.eth.blockNumber < start + timeout:
             tx_receipt = self.w3.eth.getTransactionReceipt(tx_hash)
@@ -150,7 +148,7 @@ class W3Utils:
                                             'gasPrice': gas_price}) 
         return self.wait_to_be_mined(tx_hash)
 
-    def wait_for_event(self, event_filter, txn_id, timeout = 200)
+    def wait_for_event(self, event_filter, txn_id, timeout = 200):
         # timout in nblocks
         received = False
         start = self.w3.blockNumber

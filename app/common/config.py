@@ -25,11 +25,11 @@ rsk.contract_name = 'StrideRSKContract'
 rsk.contract_path = '/home/puneet/crypto/stride/contracts/target'
 rsk.gas = 2500000
 rsk.gas_price = 1
-rsk.token_addr = '0xa4E98ec66E91abA653597501e8D1a7126A1932E3' # SBTC 
-rsk.contract_owner = '0x36E7CDF091cbFA3a86611017e813432D98dFD969' 
+rsk.token_addr = '' # NA. SBTC is currency, not token 
+rsk.contract_owner = '0x36E7CDF091cbFA3a86611017e813432D98dFD969'
 rsk.rpc_addr = 'http://localhost:4444'
-rsk.user = '0x36e7cdf091cbfa3a86611017e813432d98dfd969' 
-rsk.custodian = '0x2ceb031df9c7e5af8d4bfd08efea7e76fe32f055'
+rsk.user = '0x36E7CDF091cbFA3a86611017e813432D98dFD969'
+rsk.custodian = '0x2cEb031df9c7e5AF8D4bfd08eFEA7E76fE32F055'
 
 eth = ChainConfig('ETH')
 eth.contract_addr = '0x20A16442F95B67930a1ef81E4Aab013e2b1f9534'
