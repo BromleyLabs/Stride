@@ -110,10 +110,13 @@ class W3Utils:
         h_hash = self.w3.toBytes(hexstr = h_hash.hex())
         return h_hash, v_int, r, s
 
-    def wait_to_be_mined(self, tx_hash):
+    def wait_to_be_mined(self, tx_hash, timeout = 200):
+        # timeout in nblocks
         self.logger.info('Tx hash: %s' % HexBytes(tx_hash).hex())
         self.logger.info('Waiting for transaction to get mined')
-        while 1:
+        start = w3.eth.blockNumber
+        mined = False 
+        while self.w3.eth.blockNumber < start + timeout:
             tx_receipt = self.w3.eth.getTransactionReceipt(tx_hash)
             if tx_receipt is None:
                 time.sleep(10)
@@ -125,12 +128,17 @@ class W3Utils:
     
             if tx_receipt['blockNumber'] is not None:
                 self.logger.info('Transaction mined')
+                mined = True
                 break
     
             time.sleep(10) 
     
         self.logger.debug(tx_receipt)
-        return tx_receipt
+        if mined:
+            return tx_receipt
+        else:
+            self.logger.error('Wait for transaction timedout!')
+            return None
 
     def erc20_approve(self, erc20_address, from_addr, to_addr, amount, 
                       gas, gas_price):
@@ -142,18 +150,25 @@ class W3Utils:
                                             'gasPrice': gas_price}) 
         return self.wait_to_be_mined(tx_hash)
 
-    def wait_for_event(self, event_filter, txn_id)
-        found = False
-        while not found and n < timeout: 
+    def wait_for_event(self, event_filter, txn_id, timeout = 200)
+        # timout in nblocks
+        received = False
+        start = self.w3.blockNumber
+        while self.w3.blockNumber < start + timeout: 
             events = event_filter.get_new_entries()
             for event in events:
                 if event['args']['txn_id'] == txn_id:
                     self.logger.info('Event received')
                     self.logger.debug(event)
-                    found = True
+                    received = True 
                     break
             time.sleep(3)
-        return event
+        
+        if received:
+            return event
+        else:
+            self.logger.error('Event wait timeout!') 
+            return None
 
     def unlock_accounts(self, accounts_list, pwd):
         for a in accounts_list:
