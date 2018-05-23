@@ -37,11 +37,11 @@ contract StrideEthContract is mortal {
     mapping (uint => ForwardTxn) public m_fwd_txns; 
     mapping (uint => ReverseTxn) public m_rev_txns; 
 
-    address m_custodian_eth;
-    address m_ebtc_token_addr; /* Set by method below */ 
-    uint m_eth_ebtc_ratio_numerator = 15; 
-    uint m_eth_ebtc_ratio_denominator = 1;
-    uint m_ether_lock_interval = 100; /* In blocks */
+    address public m_custodian_eth;
+    address public m_ebtc_token_addr; /* Set by method below */ 
+    uint public m_eth_ebtc_ratio_numerator = 15; 
+    uint public m_eth_ebtc_ratio_denominator = 1;
+    uint public m_ether_lock_interval = 100; /* In blocks */
     uint m_locked_eth = 0;
 
     event FwdCustodianDeposited(uint txn_id);

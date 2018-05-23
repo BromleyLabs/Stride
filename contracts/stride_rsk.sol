@@ -35,12 +35,12 @@ contract StrideRSKContract is mortal {
     mapping (uint => ForwardTxn) public m_fwd_txns;  /* TODO: Efficient and cheaper storage and purge strategy of transactions */ 
     mapping (uint => ReverseTxn) public m_rev_txns; 
 
-    address m_custodian_rsk;   
+    address public m_custodian_rsk;   
     uint m_locked_sbtc = 0;
-    uint m_sbtc_lock_interval = 100;  /* In blocks */
+    uint public m_sbtc_lock_interval = 100;  /* In blocks. */
 
     event FwdUserDeposited(uint txn_id);
-    event FwdCustodianExecutionSuccess(uint txn_id, string pwd_str); 
+    event FwdTansferredToCustodian(uint txn_id, string pwd_str); 
     event FwdUserChallengeAccepted(uint txn_id);
 
     event RevCustodianDeposited(uint txn_id, bytes32 ack_hash); 
@@ -69,7 +69,7 @@ contract StrideRSKContract is mortal {
         emit FwdUserDeposited(txn_id);
     }
 
-    /* Called by custodian. Send password string to user. */
+    /* Called by custodian. Send password string to user and transfer SBTC to custodian */
     function fwd_transfer(uint txn_id, string pwd_str) public { 
         ForwardTxn memory txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
@@ -80,7 +80,7 @@ contract StrideRSKContract is mortal {
         m_custodian_rsk.transfer(txn.sbtc_amount);
         txn.state = FwdTxnStates.TRANSFERRED;
 
-        emit FwdCustodianExecutionSuccess(txn_id, pwd_str);
+        emit FwdTransferredToCustodian(txn_id, pwd_str);
     }
 
     /* Called by user. Refund in case no action by Custodian */ 
