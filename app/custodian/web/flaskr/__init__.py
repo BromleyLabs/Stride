@@ -12,6 +12,8 @@ def verify_request(msg_json):
     if 'method' in msg_json:
         if msg_json['method'] == 'init_sbtc2ebtc':
             return True
+        if msg_json['method'] == 'init_ebtc2sbtc':
+            return True
     else:
         return False 
 
@@ -49,22 +51,25 @@ def create_app(test_config=None):
                abort(400) 
            js = request.json
            logger.info('Received %s' % js)
-           # TODO: User must also send a txn_id with this request, and the same
-           # id must be used for all contract methods  
            if verify_request(js):           
-               pwd_str, pwd_hash = eth.generate_random_string(4)
-               js['pwd_str'] = pwd_str
-               js['pwd_hash'] = pwd_hash.hex()
-               js['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+               if js['method'] == 'init_sbtc2ebtc': 
+                   pwd_str, pwd_hash = eth.generate_random_string(4)
+                   js['pwd_str'] = pwd_str
+                   js['pwd_hash'] = pwd_hash.hex()
+                   result = pwd_hash.hex()
+
+               if js['method'] == 'init_ebtc2sbtc': 
+                   result = ''
+
                event_q.send(json.dumps(js))
-               return_msg = json.dumps({'jsonrpc': '2.0', 
-                                        'result': pwd_hash.hex(),
-                                        'id' : js['id']}) 
-               print('Returning success msg')
-               return return_msg 
+               return_msg = json.dumps({'jsonrpc': '2.0', 'result': result,
+                                            'id' : js['id']}) 
+               js['date'] = datetime.datetime.utcnow().\
+                                 strftime('%Y-%m-%dT%H:%M:%S')
+               return return_msg
            else:
                print('Returning error msg')
-               error_msg = json.dumps({'jsonrpc': '2.0', 'error' : {'code' : 1, 'message' : 'Unknow method'}, 'id' : js['id']})        
+               error_msg = json.dumps({'jsonrpc': '2.0', 'error' : {'code' : 1, 'message' : 'Unknown method'}, 'id' : js['id']})        
                return error_msg
         except:
            exc_type, exc_value, exc_tb = sys.exc_info()

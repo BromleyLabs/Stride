@@ -36,20 +36,27 @@ class App:
         self.logger.info('Received: %s' % msg)   
         msg = json.loads(msg)
         if msg['method'] == 'init_sbtc2ebtc':
-            th = threading.Thread(target = self.fun_fwd_txn, args=(msg,)) 
-            th.daemon = True
-            th.start()
-            self.logger.info('Thread forked')
+            func = self.run_fwd_txn
+        if msg['method'] == 'init_ebtc2sbtc':
+            func = self.run_rev_txn
+
+        th = threading.Thread(target = func, args=(msg,)) 
+        th.daemon = True
+        th.start()
+        self.logger.info('%s thread forked' % func)
 
     def insert_in_db(self, msg):
         # Convert long int to str for db write 
         m = copy.deepcopy(msg) 
         m['id'] = str(m['id'])
-        m['params']['sbtc_amount'] = str(m['params']['sbtc_amount'])
+        if 'sbtc_amount' in m['params']:
+            m['params']['sbtc_amount'] = str(m['params']['sbtc_amount'])
+        if 'ebtc_amount' in m['params']:
+            m['params']['ebtc_amount'] = str(m['params']['ebtc_amount'])
         self.collection.insert_one(m)
         self.logger.info('msg saved in DB')
 
-    def fun_fwd_txn(self, msg): # sbtc->ebtc
+    def run_fwd_txn(self, msg): # sbtc->ebtc
         # msg is {}
         self.insert_in_db(msg)
 
@@ -90,7 +97,20 @@ class App:
 
         self.logger.info('Forward transaction completed') 
         return 0
- 
+
+    def run_rev_txn(self, msg): # ebtc->sbtc
+        # msg is {}
+        self.insert_in_db(msg)
+        self.logger.info('Inserted in DB')
+        
+        # Offchain msg from user
+        txn_id = msg['id']
+        user_eth = msg['params']['user'] 
+        ebtc_amount = msg['params']['ebtc_amount']
+        timeout_interval = 100 # Arbitrary
+
+        self.logger.info('Rev txn complete')
+        return 0
 
 def main():
     app = App('/tmp/stride.log', 'custodian-q')
