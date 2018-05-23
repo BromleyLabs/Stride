@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import datetime
 from common import config
 from common.utils import *
+import threading
 
 class App:
     def __init__(self, log_file, q_name):
@@ -17,25 +18,39 @@ class App:
         self.collection = self.db['transactions'] 
         self.w3_rsk = W3Utils(config.rsk, self.logger)
         self.w3_eth = W3Utils(config.eth, self.logger)
-        self.eth_contract, self.eth_concise = w3_eth.init_contract('StrideEthContract') 
-        self.rsk_contract, self.rsk_concise = w3_eth.init_contract('StrideRSKContract') 
-        self.eth_tx = {'from' : config.eth.custodian, 'gas' : config.eth.gas, 'gasPrice' : config.eth.gasPrice} # Convenience 
-        self.rsk_tx = {'from' : config.rsk.custodian, 'gas' : config.rsk.gas, 'gasPrice' : config.rsk.gasPrice} # Convenience 
+        self.eth_contract, self.eth_concise = self.w3_eth.init_contract('StrideEthContract', config.eth.contract_addr) 
+        self.rsk_contract, self.rsk_concise = self.w3_rsk.init_contract('StrideRSKContract', config.rsk.contract_addr) 
+        self.eth_tx = {'from' : config.eth.custodian, 'gas' : config.eth.gas, 'gasPrice' : config.eth.gas_price} # Convenience 
+        self.rsk_tx = {'from' : config.rsk.custodian, 'gas' : config.rsk.gas, 'gasPrice' : config.rsk.gas_price} # Convenience 
+        
 
     def start(self):
         self.logger.info('Listening to events ..')
         self.event_q.channel.start_consuming()
 
     def callback(self, ch, method, properties, body):
-        body = str(body, 'utf-8') # body type is bytes (for some reason)
-        self.logger.info('Received: %s' % body)   
-        if body['method'] == 'init_sbtc2ebtc':
-            # TODO: Fork a new thread and  process_txn(body) 
+        msg = str(body, 'utf-8') # body type is bytes (for some reason)
+        self.logger.info('Received: %s' % msg)   
+        msg = json.loads(msg)
+        if msg['method'] == 'init_sbtc2ebtc':
+            th = threading.Thread(target = self.fun_fwd_txn, args=(msg,)) 
+            th.daemon = True
+            th.start()
+            self.logger.info('Thread forked')
+
+    def insert_in_db(self, msg):
+        # Convert long int to str for db write 
+        m = msg.copy() 
+        m['id'] = str(m['id'])
+        m['params']['sbtc_amount'] = str(m['params']['sbtc_amount'])
+        self.collection.insert_one(m)
+        self.logger.info('msg saved in DB')
 
     def fun_fwd_txn(self, msg): # sbtc->ebtc
-        self.collection.insert_one(json.loads(msg))   
-        self.logger.info('msg saved in DB')
-        
+        # msg is {}
+        self.insert_in_db(msg)
+
+        ''' 
         # Deposit collateral to Eth contract
         self.logger.info('Depositing EBTC to contract..')
         txn_id = msg['id']
@@ -54,19 +69,20 @@ class App:
         event = self.w3_rsk.wait_for_event(event_filter, txn_id, 
                                            timeout_interval)
         if event is None:  # Timeout. 
-            logger.info('Challenge ..')
+            self.logger.info('Challenge ..')
             tx_hash = self.eth_concise.fwd_no_user_action_challenge(txn_id,
                                                       transact = self.eth_tx) 
             self.w3_eth.wait_to_be_mined(tx_hash)
-            logger.info('Fwd transaction completed')
+            self.logger.info('Fwd transaction completed')
             return 0
          
         # Send pwd str to user
         tx_hash = self.rsk_concise.fwd_transfer(txn_id, pwd_str, 
                                                 transact = self.rsk_tx) 
         self.w3_rsk.wait_to_be_mined(tx_hash)
+        ''' 
 
-        logger.info('Forward transaction completed') 
+        self.logger.info('Forward transaction completed') 
         return 0
  
 

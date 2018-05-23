@@ -151,8 +151,8 @@ class W3Utils:
     def wait_for_event(self, event_filter, txn_id, timeout = 200):
         # timout in nblocks
         received = False
-        start = self.w3.blockNumber
-        while self.w3.blockNumber < start + timeout: 
+        start = self.w3.eth.blockNumber
+        while self.w3.eth.blockNumber < start + timeout: 
             events = event_filter.get_new_entries()
             for event in events:
                 if event['args']['txn_id'] == txn_id:

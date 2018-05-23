@@ -15,10 +15,14 @@ class App:
         self.logger = init_logger('USER',  log_file)
         self.w3_rsk = W3Utils(config.rsk, self.logger)
         self.w3_eth = W3Utils(config.eth, self.logger)
-        self.eth_contract, self.eth_consise = self.w3_eth.init_contract('StrideEthContract') 
-        self.rsk_contract, self.rsk_consise = self.w3_eth.init_contract('StrideRSKContract') 
-        self.eth_tx = {'from' : config.eth.user, 'gas' : config.eth.gas, 'gasPrice' : config.eth.gasPrice} # Convenience 
-        self.rsk_tx = {'from' : config.rsk.user, 'gas' : config.rsk.gas, 'gasPrice' : config.rsk.gasPrice} # Convenience 
+        self.eth_contract, self.eth_consise = self.w3_eth.init_contract(
+                                 'StrideEthContract', config.eth.contract_addr) 
+        self.rsk_contract, self.rsk_consise = self.w3_eth.init_contract(
+                                 'StrideRSKContract', config.rsk.contract_addr) 
+        self.eth_tx = {'from' : config.eth.user, 'gas' : config.eth.gas, 
+                       'gasPrice' : config.eth.gas_price} # Convenience 
+        self.rsk_tx = {'from' : config.rsk.user, 'gas' : config.rsk.gas, 
+                       'gasPrice' : config.rsk.gas_price} # Convenience 
 
     def run_fwd_txn(self, amount): # sbtc->ebtc
         self.logger.info('Initiate txn')
@@ -36,43 +40,43 @@ class App:
         js = json.loads(r.text)
         pwd_hash = js['result'] # of form '0x45667...'
         timeout_interval = 100 # Right timeout TBD
-        logger.info('password hash from custodian = %s' % pwd_hash)
+        self.logger.info('password hash from custodian = %s' % pwd_hash)
 
         # Wait for Custodian to transfer EBTC To Ether contract
-        logger.info('Waiting for custodian to transfer EBTC to Ether contract')
-        event_filter = self.eth_contract.contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
+        self.logger.info('Waiting for custodian to transfer EBTC to Ether contract')
+        event_filter = self.eth_contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
         event = self.w3_eth.wait_for_event(event_filter, txn_id)
         if event is None:  # Timeout 
-            logger.info('Custodian did not respond. Quiting.')
-             return 0 
+            self.logger.info('Custodian did not respond. Quiting.')
+            return 0 
 
         # Transfer SBTC to RSK contract
-        logger.info('Depositing SBTC to RSK contract ..')
+        self.logger.info('Depositing SBTC to RSK contract ..')
         tx_hash = self.rsk_concise.fwd_deposit(txn_id, pwd_hash, 
                                        timout_interval, transact = self.rsk_tx) 
         self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
    
         # Wait for custodian to send password string 
-        logger.info('Waiting for custodian to send password string')
+        self.logger.info('Waiting for custodian to send password string')
         event_filter = self.rsk_contract.contract.events.FwdTransferredToCustodian.createFilter(fromBlock = 'latest')
         event = self.w3_rsk.wait_for_event(event_filter, txn_id)
         if event is None:  # Timeout
-            logger.info('Customer did not send password string. Challenging..')
+            self.logger.info('Customer did not send password string. Challenging..')
             tx_hash = self.rsk_concise.fwd_no_custodian_action_challenge(
                                                  txn_id, transact = self.rsk_tx)
             self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
-            logger.info('Fwd transaction complete')
+            self.logger.info('Fwd transaction complete')
             return 0
 
         pwd_str = event['args']['pwd_str'] 
 
         # Issuing EBTC on Eth contract   
-        logger.info('Issuing EBTC on Eth contract ..')
+        self.logger.info('Issuing EBTC on Eth contract ..')
         tx_hash = self.eth_concise.fwd_issue(txn_id, pwd_str, 
                                              transact = self.eth_tx) 
         self.w3_eth.wait_to_be_mined(tx_hash)
 
-        logger.info('Fwd transaction completed')
+        self.logger.info('Fwd transaction completed')
         return 0
 
     def run_rev_txn(self, amount):
