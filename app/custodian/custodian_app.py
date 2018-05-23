@@ -6,6 +6,7 @@ import datetime
 from common import config
 from common.utils import *
 import threading
+import copy
 
 class App:
     def __init__(self, log_file, q_name):
@@ -20,10 +21,12 @@ class App:
         self.w3_eth = W3Utils(config.eth, self.logger)
         self.eth_contract, self.eth_concise = self.w3_eth.init_contract('StrideEthContract', config.eth.contract_addr) 
         self.rsk_contract, self.rsk_concise = self.w3_rsk.init_contract('StrideRSKContract', config.rsk.contract_addr) 
-        self.eth_tx = {'from' : config.eth.custodian, 'gas' : config.eth.gas, 'gasPrice' : config.eth.gas_price} # Convenience 
-        self.rsk_tx = {'from' : config.rsk.custodian, 'gas' : config.rsk.gas, 'gasPrice' : config.rsk.gas_price} # Convenience 
+        # For convenience:
+        self.eth_tx = {'from' : config.eth.custodian, 'gas' : config.eth.gas, 
+                       'gasPrice' : config.eth.gas_price, 'value' : 0} 
+        self.rsk_tx = {'from' : config.rsk.custodian, 'gas' : config.rsk.gas, 
+                       'gasPrice' : config.rsk.gas_price, 'value' : 0} 
         
-
     def start(self):
         self.logger.info('Listening to events ..')
         self.event_q.channel.start_consuming()
@@ -40,7 +43,7 @@ class App:
 
     def insert_in_db(self, msg):
         # Convert long int to str for db write 
-        m = msg.copy() 
+        m = copy.deepcopy(msg) 
         m['id'] = str(m['id'])
         m['params']['sbtc_amount'] = str(m['params']['sbtc_amount'])
         self.collection.insert_one(m)
@@ -50,22 +53,25 @@ class App:
         # msg is {}
         self.insert_in_db(msg)
 
-        ''' 
-        # Deposit collateral to Eth contract
-        self.logger.info('Depositing EBTC to contract..')
         txn_id = msg['id']
-        pwd_hash = msg['pwd_hash']
+        pwd_hash = msg['pwd_hash']  # Hex string '0x..'
         pwd_str = msg['pwd_str']
         user_eth = msg['params']['user'] 
-        ebtc_amount = msg['params']['amount']
-        timeout_interval = 200 # Arbitrary
-        eth_amount = 15 / 1 * ebtc_amount
-        tx_hash = self.eth_concise.fwd_deposit(txn_id, user_eth, pwd_hash,
-                      timeout_interval, eth_amount, transact = self.eth_tx) 
+        ebtc_amount = msg['params']['sbtc_amount']
+        timeout_interval = 100 # Arbitrary
+        eth_amount = int(15.0 / 1.0 * ebtc_amount)
+        
+        # Deposit collateral to Eth contract
+        self.logger.info('Depositing Ether to contract..')
+        self.eth_tx['value'] = eth_amount # Payable method
+        tx_hash = self.eth_concise.fwd_deposit(txn_id, user_eth, 
+                     self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
+                     timeout_interval, ebtc_amount, transact = self.eth_tx) 
         self.w3_eth.wait_to_be_mined(tx_hash) # TODO: check for timeout
 
         # Wait for user to deposit SBTC on RSK 
-        event_filter = self.rsk_contract.contract.events.FwdUserDeposited.createFilter(fromBlock = 'latest')
+        self.logger.info('Waiting for user to deposit SBTC on RSK')  
+        event_filter = self.rsk_contract.events.FwdUserDeposited.createFilter(fromBlock = 'latest')
         event = self.w3_rsk.wait_for_event(event_filter, txn_id, 
                                            timeout_interval)
         if event is None:  # Timeout. 
@@ -77,10 +83,10 @@ class App:
             return 0
          
         # Send pwd str to user
+        self.logger.info('Transferring SBTC to custodian addr on RSK') 
         tx_hash = self.rsk_concise.fwd_transfer(txn_id, pwd_str, 
                                                 transact = self.rsk_tx) 
         self.w3_rsk.wait_to_be_mined(tx_hash)
-        ''' 
 
         self.logger.info('Forward transaction completed') 
         return 0

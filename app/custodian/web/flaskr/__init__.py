@@ -53,7 +53,7 @@ def create_app(test_config=None):
            # id must be used for all contract methods  
            if verify_request(js):           
                pwd_str, pwd_hash = eth.generate_random_string(4)
-               js['pwd'] = pwd_str
+               js['pwd_str'] = pwd_str
                js['pwd_hash'] = pwd_hash.hex()
                js['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
                event_q.send(json.dumps(js))

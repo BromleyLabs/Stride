@@ -114,6 +114,7 @@ class W3Utils:
         self.logger.info('Waiting for transaction to get mined')
         start = self.w3.eth.blockNumber
         mined = False 
+        error = False
         while self.w3.eth.blockNumber < start + timeout:
             tx_receipt = self.w3.eth.getTransactionReceipt(tx_hash)
             if tx_receipt is None:
@@ -122,6 +123,7 @@ class W3Utils:
     
             if tx_receipt['status'] != 1:
                 self.logger.info('ERROR in transaction')
+                error = True
                 break 
     
             if tx_receipt['blockNumber'] is not None:
@@ -132,11 +134,13 @@ class W3Utils:
             time.sleep(10) 
     
         self.logger.debug(tx_receipt)
-        if mined:
+        if mined and not error:
             return tx_receipt
-        else:
-            self.logger.error('Wait for transaction timedout!')
+        elif not mined and not error:
+            self.logger.error('Transaction timedout: %s!' % tx_hash)
             return None
+        elif not mined and error:
+            return None 
 
     def erc20_approve(self, erc20_address, from_addr, to_addr, amount, 
                       gas, gas_price):
@@ -160,6 +164,8 @@ class W3Utils:
                     self.logger.debug(event)
                     received = True 
                     break
+            if received:
+                break
             time.sleep(3)
         
         if received:

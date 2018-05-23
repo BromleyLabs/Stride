@@ -15,22 +15,22 @@ class App:
         self.logger = init_logger('USER',  log_file)
         self.w3_rsk = W3Utils(config.rsk, self.logger)
         self.w3_eth = W3Utils(config.eth, self.logger)
-        self.eth_contract, self.eth_consise = self.w3_eth.init_contract(
+        self.eth_contract, self.eth_concise = self.w3_eth.init_contract(
                                  'StrideEthContract', config.eth.contract_addr) 
-        self.rsk_contract, self.rsk_consise = self.w3_eth.init_contract(
+        self.rsk_contract, self.rsk_concise = self.w3_rsk.init_contract(
                                  'StrideRSKContract', config.rsk.contract_addr) 
         self.eth_tx = {'from' : config.eth.user, 'gas' : config.eth.gas, 
-                       'gasPrice' : config.eth.gas_price} # Convenience 
+                       'gasPrice' : config.eth.gas_price, 'value' : 0}
         self.rsk_tx = {'from' : config.rsk.user, 'gas' : config.rsk.gas, 
-                       'gasPrice' : config.rsk.gas_price} # Convenience 
+                       'gasPrice' : config.rsk.gas_price, 'value' : 0} 
 
-    def run_fwd_txn(self, amount): # sbtc->ebtc
+    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
         self.logger.info('Initiate txn')
         u =  uuid.uuid4()  # Random 128 bits 
         txn_id = u.int 
         self.logger.info('Txn Id: %d' % txn_id) 
         js = {'jsonrpc' : '2.0', 'id' : txn_id, 'method' : 'init_sbtc2ebtc', 
-              'params' : {'sbtc_amount' : amount, 'user' : config.eth.user}}
+              'params' : {'sbtc_amount' : sbtc_amount, 'user' : config.eth.user}}
         r = requests.post(CUSTODIAN_PORTAL_URL, json = js)
         self.logger.info(r.text)
         if r.status_code != requests.codes.ok:
@@ -42,8 +42,8 @@ class App:
         timeout_interval = 100 # Right timeout TBD
         self.logger.info('password hash from custodian = %s' % pwd_hash)
 
-        # Wait for Custodian to transfer EBTC To Ether contract
-        self.logger.info('Waiting for custodian to transfer EBTC to Ether contract')
+        # Wait for Custodian to transfer Ether To Ether contract
+        self.logger.info('Waiting for custodian to transfer Ether to Ether contract')
         event_filter = self.eth_contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
         event = self.w3_eth.wait_for_event(event_filter, txn_id)
         if event is None:  # Timeout 
@@ -52,13 +52,16 @@ class App:
 
         # Transfer SBTC to RSK contract
         self.logger.info('Depositing SBTC to RSK contract ..')
-        tx_hash = self.rsk_concise.fwd_deposit(txn_id, pwd_hash, 
-                                       timout_interval, transact = self.rsk_tx) 
+        self.rsk_tx['value'] = sbtc_amount
+        tx_hash = self.rsk_concise.fwd_deposit(txn_id, 
+                            self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
+                            timeout_interval, transact = self.rsk_tx) 
+
         self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
    
-        # Wait for custodian to send password string 
+        # Wait for custodian to send password string on RSK 
         self.logger.info('Waiting for custodian to send password string')
-        event_filter = self.rsk_contract.contract.events.FwdTransferredToCustodian.createFilter(fromBlock = 'latest')
+        event_filter = self.rsk_contract.events.FwdCustodianExecutionSuccess.createFilter(fromBlock = 'latest')
         event = self.w3_rsk.wait_for_event(event_filter, txn_id)
         if event is None:  # Timeout
             self.logger.info('Customer did not send password string. Challenging..')
@@ -79,7 +82,7 @@ class App:
         self.logger.info('Fwd transaction completed')
         return 0
 
-    def run_rev_txn(self, amount):
+    def run_rev_txn(self, ebtc_amount):
         pass
     
         # TODO: For first few steps of Atomic Swap custodian must verify that
