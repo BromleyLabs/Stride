@@ -21,7 +21,7 @@ contract StrideEthContract is mortal {
         uint ebtc_amount; 
         uint collateral_eth; /* Calculated */
         FwdTxnStates state;
-    }  /* TODO: What is the cost of this storage? */
+    }  
 
     struct ReverseTxn { /* EBTC -> SBTC transaction */
         uint txn_id;
