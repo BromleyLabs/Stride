@@ -70,16 +70,13 @@ class App:
         timeout_interval = 100 # Arbitrary
         eth_amount = int(ETH_EBTC_RATIO * ebtc_amount)
         
-        '''
-        # Deposit collateral to Eth contract
         self.logger.info('Depositing Ether to contract..')
         self.eth_tx['value'] = eth_amount # Payable method
         tx_hash = self.eth_concise.fwd_deposit(txn_id, user_eth, 
                      self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
                      timeout_interval, ebtc_amount, transact = self.eth_tx) 
         self.eth_tx['value'] = 0 # Reset 
-        self.w3_eth.wait_to_be_mined(tx_hash) # TODO: check for timeout
-        '''
+        self.w3_eth.wait_to_be_mined(tx_hash) 
 
         # Wait for user to deposit SBTC on RSK 
         self.logger.info('Waiting for user to deposit SBTC on RSK')  

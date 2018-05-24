@@ -57,7 +57,9 @@ class App:
         self.logger.info('password hash from custodian = %s' % pwd_hash)
 
         # Wait for Custodian to transfer Ether To Ether contract
-        self.logger.info('Waiting for custodian to transfer Ether to Ether contract')
+        # TODO: User can spam custodian here by sending many requests for which
+        # customer will end up depositing Ether
+        self.logger.info('Waiting for custodian to transfer Ether')
         event_filter = self.eth_contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
         event = self.w3_eth.wait_for_event(event_filter, txn_id)
         if event is None:  # Timeout 
