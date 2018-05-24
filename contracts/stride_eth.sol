@@ -79,7 +79,7 @@ contract StrideEthContract is mortal {
 
     /* Called by custodian. Send collateral Eth to contract */
     function fwd_deposit(uint txn_id, address user_eth, bytes32 custodian_pwd_hash, 
-                                    uint timeout_interval, uint ebtc_amount) public payable {
+                         uint timeout_interval, uint ebtc_amount) public payable {
         require(txn_id > 0);
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         require(msg.sender == m_custodian_eth);
@@ -124,7 +124,7 @@ contract StrideEthContract is mortal {
         /* User creates a unique redemption id */
         require(txn_id > 0);
         require(m_rev_txns[txn_id].txn_id != txn_id, "Transaction already exists");
-        uint security_eth =  (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).div(m_eth_ebtc_ratio_denominator); 
+        uint security_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).div(m_eth_ebtc_ratio_denominator); 
         require(address(this).balance.sub(m_locked_eth) >= security_eth); 
 
         /* Assuming this contract has been given approval to move funds */ 
