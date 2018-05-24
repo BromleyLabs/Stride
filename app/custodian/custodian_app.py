@@ -8,6 +8,8 @@ from common.utils import *
 import threading
 import copy
 
+ETH_EBTC_RATIO = 15.0
+
 class App:
     def __init__(self, log_file, q_name):
         self.event_q = RabbitMQ(q_name)
@@ -66,7 +68,7 @@ class App:
         user_eth = msg['params']['user'] 
         ebtc_amount = msg['params']['sbtc_amount']
         timeout_interval = 100 # Arbitrary
-        eth_amount = int(15.0 / 1.0 * ebtc_amount)
+        eth_amount = int(ETH_EBTC_RATIO * ebtc_amount)
         
         # Deposit collateral to Eth contract
         self.logger.info('Depositing Ether to contract..')
@@ -74,6 +76,7 @@ class App:
         tx_hash = self.eth_concise.fwd_deposit(txn_id, user_eth, 
                      self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
                      timeout_interval, ebtc_amount, transact = self.eth_tx) 
+        self.eth_tx['value'] = 0 # Reset 
         self.w3_eth.wait_to_be_mined(tx_hash) # TODO: check for timeout
 
         # Wait for user to deposit SBTC on RSK 
@@ -108,6 +111,62 @@ class App:
         user_eth = msg['params']['user'] 
         ebtc_amount = msg['params']['ebtc_amount']
         timeout_interval = 100 # Arbitrary
+
+        '''
+        # Check if enough Ether is there on contract, otherwise send
+        # TODO: Check for locked ether and then calculate 
+        eth_amount = int(ETH_EBTC_RATIO * ebtc_amount)
+        self.logger.info('Sending collateral Ether to contract')
+        self.eth_tx['value'] = eth_amount # Payable method
+        tx_hash = self.eth_concise.consume_eth(transact = self.eth_tx) 
+        self.eth_tx['value'] = 0 # Reset
+        self.w3_eth.wait_to_be_mined(tx_hash)
+        '''
+        # Wait for User to surrender EBTCs on Eth contract
+        self.logger.info('Waiting for user to surrender EBTCs ..')
+        event_filter = self.eth_contract.events.RevRedemptionInitiated.createFilter(fromBlock = 'latest')
+        event = self.w3_eth.wait_for_event(event_filter, txn_id, timeout_interval)
+        if event is None:  # Timeout. 
+            self.logger.info('No redemption request from user')
+            self.logger.info('Rev Txn aborting') 
+            return 0
+        
+        dest_addr = event['args']['dest_rsk_addr']
+        self.logger.info('RSK distination address: %s' % dest_addr)
+        # TODO: User RSK address must also be read from the offchain initiation 
+        # message sent by the user.  Right now, picking it up from config.
+
+        # Deposit SBTCs on RSK contract and pass on a hash
+        self.logger.info('Depositing SBTCs on RSK ..')
+        pwd_str, pwd_hash = self.w3_eth.generate_random_string(4)
+        tx_hash = self.rsk_concise.rev_deposit(txn_id, config.rsk.user,
+                                               dest_addr, ebtc_amount, 
+                               self.w3_rsk.w3.toBytes(hexstr = pwd_hash.hex()), 
+                                               transact = self.rsk_tx)
+        self.w3_rsk.wait_to_be_mined(tx_hash)
+      
+        # Waiting for hash from user
+        self.logger.info('Waiting for hash from user..')
+        event_filter = self.eth_contract.events.RevHashAdded.createFilter(fromBlock = 'latest')
+        event = self.w3_eth.wait_for_event(event_filter, txn_id, timeout_interval)
+        if event is None:  # Timeout. 
+            self.logger.info('No action by user. Challenging ..')
+            self.logger.info('Get back SBTCs on RSK ..')
+            tx_hash = self.rsk_concise.rev_challenge(txn_id,
+                                                 transact = self.rsk_tx)
+            self.w3_rsk.wait_to_be_mined(tx_hash)
+
+            self.logger.info('Get back collateral eth on Eth ..')
+            tx_hash = self.eth_concise.rev_no_user_action_challenge(txn_id,
+                                                 transact = self.eth_tx)
+            self.w3_eth.wait_to_be_mined(tx_hash)
+            self.logger.info('Rev txn complete')
+            return 0
+
+        # Recover security deposit
+        self.logger.info('Recovering security deposit ..')
+        tx_hash = self.w3_eth.concise.rev_recover_security_deposit(txn_id, self.w3_eth.w3.toBytes(text = pwd_str), transact = self.eth_tx)
+        self.w3_eth.wait_to_be_mind(tx_hash)
 
         self.logger.info('Rev txn complete')
         return 0

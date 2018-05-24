@@ -179,7 +179,7 @@ class W3Utils:
             self.w3.personal.unlockAccount(a, pwd) 
 
     def deploy(self, contract_name):
-        conf = self.chain_config
+        conf = self.chain
         self.logger.info('Deploying contract %s on %s' % (contract_name, conf.name)) 
         abi_file = os.path.join(conf.contract_path, contract_name + '.abi')
         bin_file = os.path.join(conf.contract_path, contract_name + '.bin')

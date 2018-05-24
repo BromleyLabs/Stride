@@ -97,24 +97,73 @@ class App:
         return 0
 
     def run_rev_txn(self, ebtc_amount):
-        # Headsup to custodian
+        # Headsup to custodian. TODO: This step is only there to trigger event
+        # at the custodian's end. In deployment scenario this may not be 
+        # needed, as custodian will be continuously watching events from
+        # block chain 
+ 
         params = {'ebtc_amount' : ebtc_amount, 'user' : config.eth.user}
         txn_id, js = self.offchain_handshake('init_ebtc2sbtc', params)
         if txn_id is None: 
             return 1
 
+        # TODO: Check if Id sent by custodian matches 
+        # TODO: Ensure custodian has sufficient deposited Ether
+
         # Approve contract to transfer EBTC from user to contract 
         self.logger.info('Approving Contract to transfer EBTC from user')
-        tx_hash = self.ebtc_concise.approve(config.eth.contract_addr, 10*1e18, 
-                                                      transact = self.eth_tx) 
+        tx_hash = self.ebtc_concise.approve(config.eth.contract_addr, 
+                                           int(10*1e18), transact = self.eth_tx)
         self.w3_eth.wait_to_be_mined(tx_hash)
-
-        txn_id = self.create_txn_id() 
+ 
+        # Surrender EBTC
         self.logger.info('Surrendering %d EBTCs' % ebtc_amount)
         tx_hash = self.eth_concise.rev_request_redemption(txn_id, RSK_DEST_ADDR,
-                                                      transact = self.eth_tx) 
+                                            ebtc_amount, transact = self.eth_tx) 
         self.w3_eth.wait_to_be_mined(tx_hash)
+
+        # Wait for custodian to transfer SBTC to contract
+        self.logger.info('Waiting for custodian to transfer SBTC to contract')
+        event_filter = self.rsk_contract.events.RevCustodianDeposited.createFilter(fromBlock = 'latest')
+        event = self.w3_rsk.wait_for_event(event_filter, txn_id)
+        if event is None:  # Timeout
+            self.logger.info('Customer did not deposit SBTC. Challenging ..')
+            tx_hash = self.eth_concise.rev_no_custodian_action_challenge(txn_id,
+                                                     transact = self.eth_tx) 
+            self.w3_eth.wait_to_be_mined(tx_hash)
+            self.logger.info('Rev Txn completed')
+            return 0
         
+        ack_hash = event['args']['ack_hash']  # Expected bytes
+        self.logger.info('Hash = %s, type = %s' % (ack_hash, type(ack_hash)))
+ 
+        # Send hash back to Ether contract 
+        self.logger.info('Sending Hash to Eth contract ..')
+        tx_hash = self.eth_concise.rev_add_hash(txn_id, pwd_hash, 
+                                                 transact = self.eth_tx) 
+        self.w3_eth.wait_to_be_mined(tx_hash)
+
+        # Wait for password string from custodian 
+        self.logger.info('Waiting for custodian to send password string..')
+        event_filter = self.eth_contract.events.RevCustodianSecurityRecovered.createFilter(fromBlock = 'latest')
+        event = self.w3_eth.wait_for_event(event_filter, txn_id)
+        if event is None:  # Timeout
+            self.logger.info('Customer did not send password. Challenging ..')
+            tx_hash = self.eth_concise.rev_no_custodian_action_challenge(txn_id,
+                                                     transact = self.eth_tx) 
+            self.w3_eth.wait_to_be_mined(tx_hash)
+            self.logger.info('Rev Txn completed')
+            return 0
+       
+        ack_str = event['args']['ack_str']
+
+        # Transfer SBTCs to destination address
+        self.logger.info('Transfer SBTCs to destination address') 
+        tx_hash = self.rsk_concise.rev_transfer(txn_id, ack_str, 
+                                                transact = self.rsk_tx) 
+        self.w3_rsk.wait_to_be_mined(tx_hash)
+
+        self.logger.info('Rev Txn completed')
         return 0 
 
 def main():

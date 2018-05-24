@@ -20,7 +20,7 @@ class ChainConfig:
         self.custodian = None
 
 rsk = ChainConfig('RSK')
-rsk.contract_addr = ''
+rsk.contract_addr = '0x25b5965B3d619846411d4571faC4B277a9993b34'
 rsk.contract_name = 'StrideRSKContract'
 rsk.contract_path = '/home/puneet/crypto/stride/contracts/target'
 rsk.gas = 2500000
@@ -32,7 +32,7 @@ rsk.user = '0x36E7CDF091cbFA3a86611017e813432D98dFD969'
 rsk.custodian = '0x2cEb031df9c7e5AF8D4bfd08eFEA7E76fE32F055'
 
 eth = ChainConfig('ETH')
-eth.contract_addr = ''
+eth.contract_addr = '0xCdF753f4c96Db65d74986fA79eEA1644Dd4cf1ee'
 eth.contract_name = 'StrideEthContract'
 eth.contract_path = '/home/puneet/crypto/stride/contracts/target'
 eth.token_contract_name = 'EBTCToken'
