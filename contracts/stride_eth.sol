@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-/* Contract on Ethereum for SBTC->EBTC transaction */ 
+/* Contract on Ethereum for Stride transactions */ 
 
 import "erc20.sol";
 import "ebtc_token.sol";
@@ -39,7 +39,7 @@ contract StrideEthContract is mortal {
 
     address public m_custodian_eth;
     address public m_ebtc_token_addr; /* Set by method below */ 
-    uint public m_eth_ebtc_ratio_numerator = 15; 
+    uint public m_eth_ebtc_ratio_numerator = 15;  /* For collateral */
     uint public m_eth_ebtc_ratio_denominator = 1;
     uint public m_ether_lock_interval = 100; /* In blocks */
     uint public m_locked_eth = 0;
@@ -55,6 +55,7 @@ contract StrideEthContract is mortal {
     event RevUserChallengeAccepted(uint txn_id);
     event RevCustodianChallengeAccepted(uint txn_id);
    
+    /* Contract initialization functions called by Owner */
     function set_custodian(address addr) public {
         require(msg.sender == m_owner);
         m_custodian_eth = addr;
@@ -118,7 +119,7 @@ contract StrideEthContract is mortal {
         emit FwdCustodianChallengeAccepted(txn_id);
     }
 
-    /* Called by user */
+    /* Called by user for EBTC->SBTC conversion */
     function rev_request_redemption(uint txn_id, address dest_rsk_addr, uint ebtc_amount) public { 
         /* User creates a unique redemption id */
         require(txn_id > 0);
@@ -188,6 +189,7 @@ contract StrideEthContract is mortal {
        emit RevUserChallengeAccepted(txn_id);
    }
 
+   /* Dummy function to transfer Ethers to this contract */
    function consume_eth() public payable {
    }
 

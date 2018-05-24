@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-/* User side contract on RSK for Atomic Swap */
+/* Contract on RSK for Stride transactions */ 
 
 import "erc20.sol";
 import "mortal.sol";
@@ -47,6 +47,7 @@ contract StrideRSKContract is mortal {
     event RevTransferredToUser(uint txn_id);
     event RevCustodianChallengeAccepted(uint txn_id);
 
+    /* Contract initialization functions called by Owner */
     function set_custodian(address addr) public {
         require(msg.sender == m_owner);
         m_custodian_rsk = addr;
@@ -57,7 +58,7 @@ contract StrideRSKContract is mortal {
         m_sbtc_lock_interval = nblocks;
     }
 
-    /* Called by user.  Transfer SBTC to contract */
+    /* Called by user. Transfer SBTC to contract */
     function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
                                 uint timeout_interval) public payable {
         require(txn_id > 0);
