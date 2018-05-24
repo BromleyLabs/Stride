@@ -50,8 +50,8 @@ contract StrideEthContract is mortal {
 
     event RevCollateralDeposited(uint txn_id);
     event RevRedemptionInitiated(uint txn_id, address dest_rsk_addr);
-    event RevHashAdded(uint txn_id);
-    event RevCustodianSecurityRecovered(uint txn_id, bytes ack_str);
+    event RevHashAdded(uint txn_id, bytes32 ack_hash);
+    event RevCustodianSecurityRecovered(uint txn_id, string ack_str);
     event RevUserChallengeAccepted(uint txn_id);
     event RevCustodianChallengeAccepted(uint txn_id);
    
@@ -93,7 +93,7 @@ contract StrideEthContract is mortal {
 
     /* Called by user.  Issue EBTCs to user */
     function fwd_issue(uint txn_id, string pwd_str) public { 
-        ForwardTxn memory txn = m_fwd_txns[txn_id]; 
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_eth, "Only user can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state");
         require(block.number <= (txn.creation_block + txn.timeout_interval));
@@ -107,7 +107,7 @@ contract StrideEthContract is mortal {
 
     /* Called by custodian when no user action */
     function fwd_no_user_action_challenge(uint txn_id) public {
-        ForwardTxn memory txn = m_fwd_txns[txn_id]; 
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_eth, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
@@ -139,18 +139,18 @@ contract StrideEthContract is mortal {
 
    /* Called by user */
    function rev_add_hash(uint txn_id, bytes32 ack_hash) public { 
-       ReverseTxn memory txn = m_rev_txns[txn_id];
+       ReverseTxn storage txn = m_rev_txns[txn_id];
        require(msg.sender == txn.user_eth);
        require(txn.state == RevTxnStates.DEPOSITED);
        txn.ack_hash = ack_hash;
        txn.state = RevTxnStates.HASH_ADDED;
        
-       emit RevHashAdded(txn_id);
+       emit RevHashAdded(txn_id, ack_hash);
    } 
     
-   /* Called by custodian after user receives expected SBTCs */ 
-   function rev_recover_security_deposit(uint txn_id, bytes ack_str) public {
-       ReverseTxn memory txn = m_rev_txns[txn_id];
+   /* Called by custodian after RSK contract receives expected SBTCs */ 
+   function rev_recover_security_deposit(uint txn_id, string ack_str) public {
+       ReverseTxn storage txn = m_rev_txns[txn_id];
        require(msg.sender == m_custodian_eth);
        require(txn.state == RevTxnStates.HASH_ADDED);
        require(txn.ack_hash == keccak256(ack_str)); 
@@ -164,7 +164,7 @@ contract StrideEthContract is mortal {
 
    /* Called by custodian if no action by user */
    function rev_no_user_action_challenge(uint txn_id) public {
-       ReverseTxn memory txn = m_rev_txns[txn_id];
+       ReverseTxn storage txn = m_rev_txns[txn_id];
        require(msg.sender == m_custodian_eth);
        require(txn.state == RevTxnStates.DEPOSITED);
        require(block.number > txn.creation_block + m_ether_lock_interval); 
@@ -177,7 +177,7 @@ contract StrideEthContract is mortal {
 
    /* Called by user if no action has been taken by custodian */
    function rev_no_custodian_action_challenge(uint txn_id) public { 
-       ReverseTxn memory txn = m_rev_txns[txn_id];
+       ReverseTxn storage txn = m_rev_txns[txn_id];
        require(msg.sender == txn.user_eth);
        require(txn.state == RevTxnStates.DEPOSITED);
        require(block.number > txn.creation_block + m_ether_lock_interval); 
@@ -188,7 +188,9 @@ contract StrideEthContract is mortal {
        emit RevUserChallengeAccepted(txn_id);
    }
 
-   
+   function consume_eth() public payable {
+   }
+
 }
 
 

@@ -71,7 +71,7 @@ contract StrideRSKContract is mortal {
 
     /* Called by custodian. Send password string to user and transfer SBTC to custodian */
     function fwd_transfer(uint txn_id, string pwd_str) public { 
-        ForwardTxn memory txn = m_fwd_txns[txn_id]; 
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state");
         require(block.number <= (txn.creation_block + txn.timeout_interval));
@@ -85,7 +85,7 @@ contract StrideRSKContract is mortal {
 
     /* Called by user. Refund in case no action by Custodian */ 
     function fwd_no_custodian_action_challenge(uint txn_id) public {
-        ForwardTxn memory txn = m_fwd_txns[txn_id]; 
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_rsk, "Only user can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
@@ -103,6 +103,7 @@ contract StrideRSKContract is mortal {
         require(m_rev_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         /* The custodian should pay enough so that lock amount is covered */
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
+        /* TODO: Ensure that custodian has transferred enough to satify condition below */
         m_locked_sbtc += sbtc_amount;
 
         m_rev_txns[txn_id] = ReverseTxn(txn_id, user_rsk, dest_rsk_addr, ack_hash, sbtc_amount, 
@@ -112,11 +113,11 @@ contract StrideRSKContract is mortal {
     }
 
     /* Called by user.  Transfer SBTCs to destination address */
-    function rev_transfer(uint txn_id, bytes ack_str) public { 
-        ReverseTxn memory txn = m_rev_txns[txn_id];
-        require(msg.sender == txn.user_rsk); 
-        require(txn.ack_hash == keccak256(ack_str)); 
-        require(block.number <= txn.creation_block + m_sbtc_lock_interval);  /* Within certain time period */
+    function rev_transfer(uint txn_id, string ack_str) public { 
+        ReverseTxn storage txn = m_rev_txns[txn_id];
+        require(msg.sender == txn.user_rsk, "Only RSK user can call this"); 
+        require(txn.ack_hash == keccak256(ack_str), "Hash does not match"); 
+        require(block.number <= txn.creation_block + m_sbtc_lock_interval, "Timed out");  /* Within certain time period */
        
         txn.dest_rsk_addr.transfer(txn.sbtc_amount);
         txn.state = RevTxnStates.TRANSFERRED; 
@@ -126,7 +127,7 @@ contract StrideRSKContract is mortal {
 
     /* Called by custodian. Recover custodian's SBTCs if user hasn't acted for a while. */
     function rev_challenge(uint txn_id) public { 
-        ReverseTxn memory txn = m_rev_txns[txn_id];
+        ReverseTxn storage txn = m_rev_txns[txn_id];
         require(msg.sender == m_custodian_rsk); 
         require(block.number > txn.creation_block + m_sbtc_lock_interval); 
         require(txn.state == RevTxnStates.DEPOSITED);
@@ -138,9 +139,6 @@ contract StrideRSKContract is mortal {
         emit RevCustodianChallengeAccepted(txn_id);
     }
 
-    function consume_eth() payable public {
-
-    }
 }
 
 
