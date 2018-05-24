@@ -104,7 +104,8 @@ contract StrideRSKContract is mortal {
         require(m_rev_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         /* The custodian should pay enough so that lock amount is covered */
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
-        /* TODO: Ensure that custodian has transferred enough to satify condition below */
+        /* Ensure custodian has transferred enough for locking SBTCs */
+        require((address(this).balance - m_locked_sbtc + msg.value) >= sbtc_amount); 
         m_locked_sbtc += sbtc_amount;
 
         m_rev_txns[txn_id] = ReverseTxn(txn_id, user_rsk, dest_rsk_addr, ack_hash, sbtc_amount, 
