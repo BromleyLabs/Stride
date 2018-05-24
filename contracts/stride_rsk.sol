@@ -36,11 +36,11 @@ contract StrideRSKContract is mortal {
     mapping (uint => ReverseTxn) public m_rev_txns; 
 
     address public m_custodian_rsk;   
-    uint m_locked_sbtc = 0;
+    uint public m_locked_sbtc = 0;
     uint public m_sbtc_lock_interval = 100;  /* In blocks. */
 
     event FwdUserDeposited(uint txn_id);
-    event FwdTansferredToCustodian(uint txn_id, string pwd_str); 
+    event FwdTransferredToCustodian(uint txn_id, string pwd_str); 
     event FwdUserChallengeAccepted(uint txn_id);
 
     event RevCustodianDeposited(uint txn_id, bytes32 ack_hash); 
@@ -99,9 +99,10 @@ contract StrideRSKContract is mortal {
     /* Called by custodian. Send enough SBTCs to contract to pay to user. */
     function rev_deposit(uint txn_id, address user_rsk, address dest_rsk_addr, uint sbtc_amount,
                          bytes32 ack_hash) payable public {  
+        require(txn_id > 0);
+        require(m_rev_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         /* The custodian should pay enough so that lock amount is covered */
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
-        require(address(this).balance.sub(m_locked_sbtc) >= sbtc_amount); 
         m_locked_sbtc += sbtc_amount;
 
         m_rev_txns[txn_id] = ReverseTxn(txn_id, user_rsk, dest_rsk_addr, ack_hash, sbtc_amount, 
@@ -137,6 +138,9 @@ contract StrideRSKContract is mortal {
         emit RevCustodianChallengeAccepted(txn_id);
     }
 
+    function consume_eth() payable public {
+
+    }
 }
 
 

@@ -42,12 +42,13 @@ contract StrideEthContract is mortal {
     uint public m_eth_ebtc_ratio_numerator = 15; 
     uint public m_eth_ebtc_ratio_denominator = 1;
     uint public m_ether_lock_interval = 100; /* In blocks */
-    uint m_locked_eth = 0;
+    uint public m_locked_eth = 0;
 
     event FwdCustodianDeposited(uint txn_id);
     event FwdEBTCIssued(uint txn_id);
     event FwdCustodianChallengeAccepted(uint txn_id);
 
+    event RevCollateralDeposited(uint txn_id);
     event RevRedemptionInitiated(uint txn_id, address dest_rsk_addr);
     event RevHashAdded(uint txn_id);
     event RevCustodianSecurityRecovered(uint txn_id, bytes ack_str);
@@ -78,6 +79,7 @@ contract StrideEthContract is mortal {
     /* Called by custodian. Send collateral Eth to contract */
     function fwd_deposit(uint txn_id, address user_eth, bytes32 custodian_pwd_hash, 
                                     uint timeout_interval, uint ebtc_amount) public payable {
+        require(txn_id > 0);
         require(m_fwd_txns[txn_id].txn_id != txn_id, "Transaction already exists");
         require(msg.sender == m_custodian_eth);
         uint collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).div(m_eth_ebtc_ratio_denominator); 
@@ -146,7 +148,7 @@ contract StrideEthContract is mortal {
        emit RevHashAdded(txn_id);
    } 
     
-   /* Called by custodian */ 
+   /* Called by custodian after user receives expected SBTCs */ 
    function rev_recover_security_deposit(uint txn_id, bytes ack_str) public {
        ReverseTxn memory txn = m_rev_txns[txn_id];
        require(msg.sender == m_custodian_eth);
@@ -185,6 +187,7 @@ contract StrideEthContract is mortal {
 
        emit RevUserChallengeAccepted(txn_id);
    }
+
    
 }
 
