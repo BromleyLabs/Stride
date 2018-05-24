@@ -1,0 +1,3 @@
+Infura node: https://ropsten.infura.io/rWjoIVMZaYJbccSEmLQn
+
+Seems RSK addresses are all lower case, it does not accept checksumed addresses.
