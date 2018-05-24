@@ -141,6 +141,42 @@ class W3Utils:
             return None
         elif not mined and error:
             return None 
+    '''
+    def wait_to_be_mined_batch(self, tx_hashes, timeout = 200):
+        # tx_hashes: list of tx_hash
+        # timeout in nblocks
+        self.logger.info('Tx hashes: %s' % tx_hashes) 
+        self.logger.info('Waiting for transactions to get mined')
+        start = self.w3.eth.blockNumber
+        mined = False 
+        error = False
+        status = [0] * len(tx_hashes)
+        while self.w3.eth.blockNumber < start + timeout:
+            for i, tx_hash in enumerate(tx_hashes):
+                tx_receipt = self.w3.eth.getTransactionReceipt(tx_hash)
+                if tx_receipt is None:
+                    time.sleep(10)
+                    continue
+    
+                if tx_receipt['status'] != 1:
+                    self.logger.info('ERROR in transaction %s' % tx_hash)
+                    status[i] = 1
+ 
+                if tx_receipt['blockNumber'] is not None:
+                    self.logger.info('Transaction mined: %s' % tx_hash)
+                    mined = True
+    
+            time.sleep(10) 
+    
+        self.logger.debug(tx_receipt)
+        if mined and not error:
+            return tx_receipt
+        elif not mined and not error:
+            self.logger.error('Transaction timedout: %s!' % tx_hash)
+            return None
+        elif not mined and error:
+            return None 
+    '''
 
     def erc20_approve(self, erc20_address, from_addr, to_addr, amount, 
                       gas, gas_price):

@@ -70,6 +70,7 @@ class App:
         timeout_interval = 100 # Arbitrary
         eth_amount = int(ETH_EBTC_RATIO * ebtc_amount)
         
+        '''
         # Deposit collateral to Eth contract
         self.logger.info('Depositing Ether to contract..')
         self.eth_tx['value'] = eth_amount # Payable method
@@ -78,6 +79,7 @@ class App:
                      timeout_interval, ebtc_amount, transact = self.eth_tx) 
         self.eth_tx['value'] = 0 # Reset 
         self.w3_eth.wait_to_be_mined(tx_hash) # TODO: check for timeout
+        '''
 
         # Wait for user to deposit SBTC on RSK 
         self.logger.info('Waiting for user to deposit SBTC on RSK')  
@@ -112,7 +114,6 @@ class App:
         ebtc_amount = msg['params']['ebtc_amount']
         timeout_interval = 100 # Arbitrary
 
-        '''
         # Check if enough Ether is there on contract, otherwise send
         # TODO: Check for locked ether and then calculate 
         eth_amount = int(ETH_EBTC_RATIO * ebtc_amount)
@@ -121,7 +122,7 @@ class App:
         tx_hash = self.eth_concise.consume_eth(transact = self.eth_tx) 
         self.eth_tx['value'] = 0 # Reset
         self.w3_eth.wait_to_be_mined(tx_hash)
-        '''
+
         # Wait for User to surrender EBTCs on Eth contract
         self.logger.info('Waiting for user to surrender EBTCs ..')
         event_filter = self.eth_contract.events.RevRedemptionInitiated.createFilter(fromBlock = 'latest')
@@ -139,10 +140,13 @@ class App:
         # Deposit SBTCs on RSK contract and pass on a hash
         self.logger.info('Depositing SBTCs on RSK ..')
         pwd_str, pwd_hash = self.w3_eth.generate_random_string(4)
+        self.logger.info('Generate pwd: %s, hash = %s' % (pwd_str, pwd_hash.hex()))
+        self.rsk_tx['value'] = ebtc_amount
         tx_hash = self.rsk_concise.rev_deposit(txn_id, config.rsk.user,
                                                dest_addr, ebtc_amount, 
                                self.w3_rsk.w3.toBytes(hexstr = pwd_hash.hex()), 
                                                transact = self.rsk_tx)
+        self.rsk_tx['value'] = 0 # Reset
         self.w3_rsk.wait_to_be_mined(tx_hash)
       
         # Waiting for hash from user
@@ -163,10 +167,16 @@ class App:
             self.logger.info('Rev txn complete')
             return 0
 
+        # TODO: Verify hash 
+        if event['args']['ack_hash'] != self.w3_eth.w3.toBytes(hexstr = pwd_hash.hex()): 
+            self.logger.error('Hashes do not match: %s, %s' % (event['args']['ack_hash'], self.w3_eth.w3.toBytes(hexstr = pwd_hash.hex()))) 
+        else:
+            self.logger.info('Hashes match')
+
         # Recover security deposit
         self.logger.info('Recovering security deposit ..')
-        tx_hash = self.w3_eth.concise.rev_recover_security_deposit(txn_id, self.w3_eth.w3.toBytes(text = pwd_str), transact = self.eth_tx)
-        self.w3_eth.wait_to_be_mind(tx_hash)
+        tx_hash = self.eth_concise.rev_recover_security_deposit(txn_id, pwd_str, transact = self.eth_tx)
+        self.w3_eth.wait_to_be_mined(tx_hash)
 
         self.logger.info('Rev txn complete')
         return 0

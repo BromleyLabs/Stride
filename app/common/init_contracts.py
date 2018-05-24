@@ -44,7 +44,7 @@ def main():
     logger.info('Setting lock interval on RSK ..')
     tx_hash = rsk_concise.set_lock_interval(100, transact = rsk_tx) 
     rsk.wait_to_be_mined(tx_hash)
-
+    
     logger.info('Setting lock interval on ETH ..')
     tx_hash = eth_concise.set_lock_interval(100, transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)

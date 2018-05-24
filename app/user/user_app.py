@@ -139,7 +139,7 @@ class App:
  
         # Send hash back to Ether contract 
         self.logger.info('Sending Hash to Eth contract ..')
-        tx_hash = self.eth_concise.rev_add_hash(txn_id, pwd_hash, 
+        tx_hash = self.eth_concise.rev_add_hash(txn_id, ack_hash, 
                                                  transact = self.eth_tx) 
         self.w3_eth.wait_to_be_mined(tx_hash)
 
