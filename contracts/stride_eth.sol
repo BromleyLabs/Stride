@@ -51,9 +51,9 @@ contract StrideEthContract is mortal,usingOraclize {
         return out;
     }
 
-    /* result bytes format:
-       current_block(32), txn_block(32), contract_address(20), dest_addr(20), 
-       sbtc(32)
+    /* Called by Oraclize. 
+       result bytes format: current_block(32), txn_block(32), 
+                            contract_address(20), dest_addr(20), sbtc(32)
     */  
     function __callback(bytes32 query_id, string result) public {
         require(msg.sender != oraclize_cbAddress());
