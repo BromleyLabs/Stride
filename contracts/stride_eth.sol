@@ -6,118 +6,106 @@ import "erc20.sol";
 import "ebtc_token.sol";
 import "mortal.sol";
 import "github.com/oraclize/ethereum-api/oraclizeAPI_0.5.sol";
-import "JsmnSolLib.sol";
 
 contract StrideEthContract is mortal,usingOraclize {
-    using JsmnSolLib;
 
     struct FwdTxn {
-        bytes32 txnHash;
-        bytes32 txnQueryId; 
-        bytes32 blockQueryId;
-        uint blockNumberOk; /* enough confirmations */
-        uint txnOk; 
+        bytes32 txn_hash;
+        uint blocknumber_ok; /* enough confirmations */
+        uint txn_ok; 
         bool issued;
     }
 
-    string public rskOracleURL = "http://ropsten.bromleylabs.io";
-    address public rskContractAddr = 0x0; 
-    mapping (bytes32 => uint) txnQueryMap;
-    mapping (bytes32 => uint) blockQueryMap; 
-    mapping (string => address) helperMap;
-
-    FwdTxn [] fwdTxns;
-    event LogNewOraclizeQuery(string description);
+    address public m_rsk_addr; /* Set by method below */
+    address public m_ebtc_token_addr; /* Set by method below */
+    mapping(bytes32 => FwdTxn) m_fwd_txns;
+    mapping(bytes32 => bytes32) m_query_map;
+    uint public m_min_confirmations = 30;
 
     function setRSKContractAddr(address addr, string addr_str) public {
         require(msg.sender == m_owner, "Only owner can set this");
-        rskContractAddr = addr;
-        helperMap[addr_str] = rskContactAddr;
+        m_rsk_addr = addr;
     } 
 
-    function setRSKOracleURL(string url) public {
+    function setMinConfirmations(uint n) public {
         require(msg.sender == m_owner, "Only owner can set this");
-        rskOracleURL = url; 
-    } 
+        m_min_confirmations = n;
+    }
 
-    function __callback(bytes32 queryId, string result) {
+    function setEBTCTokenAddress(address addr) {
+        require(msg.sender == m_owner, "Only owner can set this");
+        m_ebtc_token_addr = addr;
+    }
+
+    /* Utility function to extract bytes from a byte array given an offset 
+       and returns as bytes32 */
+    function getBytes32(bytes b, uint offset) private pure returns (bytes32) {
+        bytes32 out;
+        for (uint i = 0; i < 32; i++) 
+            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8); 
+        return out;
+    }
+
+    function getBytes20(bytes b, uint offset) private pure returns (bytes20) {
+        bytes20 out;
+        for (uint i = 0; i < 20; i++) 
+            out |= bytes20(b[offset + i] & 0xFF) >> (i * 8); 
+        return out;
+    }
+
+    /* result bytes format:
+       current_block(32), txn_block(32), contract_address(20), dest_addr(20), 
+       sbtc(32)
+    */  
+    function __callback(bytes32 query_id, string result) {
         require(msg.sender != oraclize_cbAddress());
-        /* Can use either map below */
-        FwdTxn storage txn = fxdTnxs[txnQueryMap[queryId]]; 
-        if (queryId == txn.txnQueryId) {
-            Token[] memory tokens;
-            (ok, tokens ntokens) =  parse(result, 29);
-            /* Check To address of transaction */
-            string memory toAddr = getBytes( 
-                result, 
-                tokens[17].start, 
-                tokens[17].end
-            );
-            require(helperMap[toAddr] == rskContractAddr, "Incorrect To addr");
-            
-            /* Check "value" field in transaction */
-            string memory sbtc_amount = getBytes( 
-                result, 
-                tokens[21].start, 
-                tokens[21].end
-            );
 
+        bytes32 txn_hash = m_query_map[query_id];
+        FwdTxn storage txn = m_fwd_txns[txn_hash];
+        require(!txn.issued, "Transaction already issued");
 
-        }
-        else if (queryId == txn.blockQueryId) {
+        bytes b = bytes(result);
 
+        uint offset = 0; 
+        uint txn_block = uint(getBytes32(b, offset));
 
-        }
-        else 
-            revert("Incorrect queryId from Oraclize");
+        offset += 32;  
+        uint current_block = uint(getBytes32(b, offset));
+
+        require(current_block - txn_block > m_min_confirmations, 
+                "Confirmations not enough");
+
+        offset += 32;  
+        address to_addr = address(getBytes20(b, offset));
+        require(to_addr == rskContractAddress, "To address does not match");
+
+        offset += 20;  
+        address dest_addr = uint(getBytes20(b, offset));
+
+        offset += 20;  
+        uint sbtc_amount = uint(getBytes32(b, offset));
+   
+
     }
 
     /* Called by user. 
        jsonHashRequest: '{"jsonrpc" : "2.0", "id" : 0, "method" : 
        "eth_getTransactionByHash", "params" : ["0x<transaction hash>"]}'
     */
-    function issueEBTC(bytes32 txnHash, string jsonHashRequest) public { 
+    function issueEBTC(bytes32 txn_hash, string json_request) public { 
         /* There should be enough balance for all Oraclize queries */
-        require(
-            oraclize_getPrice("URL") * 2 > this.balance, 
-            "Oraclize query not send"
-        ); 
+        require(oraclize_getPrice("URL")  > this.balance, 
+                                  "Oraclize query not send"); 
 
         /* Obtain transaction info from RSK */ 
-        txnQueryId = oraclize_query(
-            "URL", 
-            "json(http://ropsten.bromleylabs.io).result",
-            jsonHashRequest
-       ); 
+        query_id = oraclize_query("URL", 
+                                  "json(http://ropsten.bromleylabs.io).result",
+                                  json_request); 
 
-        /* Obtain latest block number from RSK */ 
-        blockQueryId = oraclize_query(
-            "URL", 
-            "json(http://ropsten.bromleylabs.io).result",
-            '{"jsonrpc" : "2.0", "id" : 0, "method" : "eth_blockNumber",\
-                "params" : []}'
-        );
-
-        bytes32 txnHash;
-        bytes32 txnQueryId; 
-        bytes32 blockQueryId;
-        bool blockNumberOk; /* enough confirmations */
-        bool txnOk; 
-        bool issued;
-        fwdTxns.push(
-            FwdTxn(
-                txnHash, 
-                txnQueryId, 
-                blockQueryId, 
-                false, 
-                false, 
-                false,
-                false
-            )
-        );
-       txnQueryMap[txnQueryId] = fxdTxns.length - 1; /* Index */
-       blockQueryMap[blockQueryId] = fxdTxns.length - 1; /* Index */
-    }
+       if(m_fwd_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 
+           m_fwd_txns[txn_hash] = FwdTxn(txn_hash, query_id, false, false, 
+                                         false);
+       m_query_map[query_id] = txn_hash;
 
 }
 
