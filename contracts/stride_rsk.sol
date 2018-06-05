@@ -23,9 +23,6 @@ contract StrideRSKContract is mortal, usingOraclize {
 
     event UserDeposited(address userRSK, uint sbtcAmount);
 
-    function depositSBTC(address eth_dest_addr) public payable {
-        emit UserDeposited(msg.sender, msg.value); 
-    }
 
     function setEthContractAddr(address addr) public {
         require(msg.sender == m_owner, "Only owner can set this");
@@ -35,6 +32,10 @@ contract StrideRSKContract is mortal, usingOraclize {
     function setMinConfirmations(uint n) public {
         require(msg.sender == m_owner, "Only owner can set this");
         m_min_confirmations = n;
+    }
+
+    function depositSBTC(address eth_dest_addr) public payable {
+        emit UserDeposited(msg.sender, msg.value); 
     }
 
     /* Called by Oraclize. 
@@ -52,10 +53,10 @@ contract StrideRSKContract is mortal, usingOraclize {
         require(b.length > 0, "Transaction incorrect");
 
         uint offset = 0; 
-        uint txn_block = uint(b.getBytes32(offset));
+        uint current_block = uint(b.getBytes32(offset));
 
         offset += 32;  
-        uint current_block = uint(b.getBytes32(offset));
+        uint txn_block = uint(b.getBytes32(offset));
 
         require(current_block - txn_block > m_min_confirmations, 
                 "Confirmations not enough");
@@ -90,7 +91,7 @@ contract StrideRSKContract is mortal, usingOraclize {
         bytes32 query_id;
         query_id = oraclize_query(
                       "URL", 
-                      "json(http://api.bromleylabs.io/ethereum/ropsten).result",
+                      "json(http://localhost/stride/ethereum/ropsten).result",
                       json_request); 
 
        if(m_rev_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 

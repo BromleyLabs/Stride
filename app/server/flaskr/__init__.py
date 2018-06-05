@@ -12,11 +12,38 @@ def process_request(js, conf):
     # doing error checking over here
     
     if js['method'] == 'eth_getTransactionByHash':
-        tx_hash_bytes = bytes.fromhex(js['params'][2:]) # params='0x23AB...' 
+        txn_hex = js['params'] 
+        txn_hash_bytes = bytes.fromhex(txn_hex[2:]) # params='0x23AB...' 
+
+        r = conf.w3.eth.getTransactionReceipt(txn_hex) 
+        if r['status'] != 1: 
+            return ''
+
+        tx = conf.w3.eth.getTransaction(txn_hex)
+        txn_block = txn['blockNumber'] 
+        if txn_block is None: 
+            return ''
+        txn_block_bytes = txn_block.to_bytes(32, 'big')
 
         curr_block = conf.w3.eth.blockNumber
         curr_block_bytes = curr_block.to_bytes(32, 'big') 
-        
+     
+        to_addr_bytes = bytes.fromhex(tx['to'][2:])
+         
+        input_bytes = bytes.fromhex(tx['input'][2:])
+
+        dest_addr_bytes = input_bytes[0:20]
+          
+        if conf.name == 'EthRopsten': 
+            amount_bytes = input_bytes[20 : 52]
+        elif conf.name == 'RSKTestnet':
+            amount = tx['value']
+            amount_bytes = amount.to_bytes(32, 'big')
+
+        bytes_to_send = curr_block_bytes + txn_block_bytes + to_addr_bytes \
+                        + dest_addr_bytes + amount_bytes 
+      
+        return bytes_to_send.decode('utf-8')
 
      return ''
 

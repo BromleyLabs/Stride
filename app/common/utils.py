@@ -71,9 +71,8 @@ class W3Utils:
         self.w3 = Web3(Web3.HTTPProvider(chain_config.rpc_addr))
         self.chain = chain_config
         if chain_config == config.rsk: 
-            self.unlock_accounts([self.chain.contract_owner, 
-                                  self.chain.user, 
-                                  self.chain.custodian], "puneet")
+            self.unlock_accounts([self.chain.contract_owner, self.chain.user],
+                                  "puneet")
         # Parity accounts assumed to be unlocked while running the node
      
     def init_contract(self, contract_name, contract_addr):
