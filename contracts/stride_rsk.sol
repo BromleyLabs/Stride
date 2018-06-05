@@ -20,9 +20,15 @@ contract StrideRSKContract is mortal, usingOraclize {
     mapping(bytes32 => RevTxn) m_rev_txns;
     mapping(bytes32 => bytes32) m_query_map;
     uint public m_min_confirmations = 30;
+    string public m_stride_server_url = "binary(http://localhost/stride/ethereum/ropsten);";
 
-    event UserDeposited(address userRSK, uint sbtcAmount);
+    event UserDeposited(address userRSK, uint sbtc_amount);
+    event UserRedeemed(address dest_addr, uint sbtc_amount);
 
+    function setStrideServerURL(string url) {
+        require(msg.sender == m_owner, "Only owner can set this");
+        m_stride_server_url = url;
+    }
 
     function setEthContractAddr(address addr) public {
         require(msg.sender == m_owner, "Only owner can set this");
@@ -76,6 +82,8 @@ contract StrideRSKContract is mortal, usingOraclize {
         txn.redeemed = true;
 
         delete m_query_map[query_id];
+    
+        emit UserRedeemed(dest_addr, sbtc_amount);
     }
 
     /* Called by user. 
@@ -91,7 +99,7 @@ contract StrideRSKContract is mortal, usingOraclize {
         bytes32 query_id;
         query_id = oraclize_query(
                       "URL", 
-                      "binary(http://localhost/stride/ethereum/ropsten)",
+                      m_stride_server_url,
                       json_request); 
 
        if(m_rev_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 

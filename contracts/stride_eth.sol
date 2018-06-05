@@ -23,8 +23,15 @@ contract StrideEthContract is mortal,usingOraclize {
     mapping(bytes32 => FwdTxn) m_fwd_txns;
     mapping(bytes32 => bytes32) m_query_map;
     uint public m_min_confirmations = 30;
+    string public m_stride_server_url = "binary(http://localhost/stride/rsk/testnet);";
 
-    event UserRedeemed(address user_eth, uint ebtc_amount);
+    event EBTCIssued(address dest_addr, uint ebtc_amount);
+    event EBTCSurrendered(address user_eth, uint ebtc_amount);
+
+    function setStrideServerURL(string url) {
+        require(msg.sender == m_owner, "Only owner can set this");
+        m_stride_server_url = url;
+    }
 
     function setRSKContractAddr(address addr) public {
         require(msg.sender == m_owner, "Only owner can set this");
@@ -79,6 +86,8 @@ contract StrideEthContract is mortal,usingOraclize {
         txn.issued = true;
 
         delete m_query_map[query_id];
+       
+        emit EBTCIssued(dest_addr, ebtc_amount);
     }
 
     /* Called by user. 
@@ -94,7 +103,7 @@ contract StrideEthContract is mortal,usingOraclize {
         bytes32 query_id;
         query_id = oraclize_query(
                       "URL", 
-                      "binary(http://localhost/stride/rsk/testnet)",
+                      m_stride_server_url, 
                       json_request); 
 
        if(m_fwd_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 
@@ -107,7 +116,7 @@ contract StrideEthContract is mortal,usingOraclize {
        /* Assumed user has approved EBTC transfer by this contract */ 
        require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, 0x0, 
                                                          ebtc_amount));
-       emit UserRedeemed(msg.sender, ebtc_amount);
+       emit EBTCSurrendered(msg.sender, ebtc_amount);
    }
 
 }
