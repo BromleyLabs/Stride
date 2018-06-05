@@ -94,7 +94,7 @@ contract StrideEthContract is mortal,usingOraclize {
         bytes32 query_id;
         query_id = oraclize_query(
                       "URL", 
-                      "json(http://localhost/stride/rsk/testnet).result",
+                      "binary(http://localhost/stride/rsk/testnet)",
                       json_request); 
 
        if(m_fwd_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 

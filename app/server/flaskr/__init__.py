@@ -1,11 +1,17 @@
 import os
 import sys
-from flask import Flask, request, abort 
+from flask import Flask, request, abort, Response 
 import traceback
 from common.utils import *
 from common import config
 import json
 import datetime
+from hexbytes import HexBytes
+
+def binary_response(b):
+    resp = Response(b, status=200, mimetype='application/octet-stream')
+    resp.headers['Content-Length'] = len(b) 
+    return resp
 
 def process_request(js, conf):
     # NOTE: This function needs protections under try/except as we are not
@@ -17,35 +23,36 @@ def process_request(js, conf):
 
         r = conf.w3.eth.getTransactionReceipt(txn_hex) 
         if r['status'] != 1: 
-            return ''
+            return binary_response(b'') 
 
-        tx = conf.w3.eth.getTransaction(txn_hex)
+        txn = conf.w3.eth.getTransaction(txn_hex)
         txn_block = txn['blockNumber'] 
         if txn_block is None: 
-            return ''
+            return binary_response(b'') 
+
         txn_block_bytes = txn_block.to_bytes(32, 'big')
 
         curr_block = conf.w3.eth.blockNumber
         curr_block_bytes = curr_block.to_bytes(32, 'big') 
      
-        to_addr_bytes = bytes.fromhex(tx['to'][2:])
+        to_addr_bytes = bytes.fromhex(txn['to'][2:])
          
-        input_bytes = bytes.fromhex(tx['input'][2:])
+        input_bytes = bytes.fromhex(txn['input'][2:])
 
         dest_addr_bytes = input_bytes[0:20]
           
-        if conf.name == 'EthRopsten': 
+        if conf.chain.name == 'ETHRopsten': 
             amount_bytes = input_bytes[20 : 52]
-        elif conf.name == 'RSKTestnet':
-            amount = tx['value']
+        elif conf.chain.name == 'RSKTestnet':
+            amount = txn['value']
             amount_bytes = amount.to_bytes(32, 'big')
 
         bytes_to_send = curr_block_bytes + txn_block_bytes + to_addr_bytes \
                         + dest_addr_bytes + amount_bytes 
       
-        return bytes_to_send.decode('utf-8')
+        return binary_response(bytes_to_send) 
 
-     return ''
+    return binary_response(b'') 
 
 def create_app(test_config=None):
     # create and configure the app
@@ -72,12 +79,12 @@ def create_app(test_config=None):
     eth = W3Utils(config.eth, logger)
     rsk = W3Utils(config.rsk, logger) 
     
-    @app.route('stride/<chain>/<network>', methods=['POST'])
+    @app.route('/stride/<chain>/<network>', methods=['POST'])
     def get_transaction_by_hash(chain, network):
         try:
            if not request.json:
                logger.info('Request does not have json')
-               return '' 
+               return binary_response(b'') 
 
            js = request.json
            logger.info('Received %s' % js)
@@ -94,8 +101,8 @@ def create_app(test_config=None):
            exc_type, exc_value, exc_tb = sys.exc_info()
            logger.error(repr(traceback.format_exception(exc_type, exc_value,
                                           exc_tb)))
-           return '' 
-
+           return binary_response(b'') 
+   
     return app
 
 app = create_app()
