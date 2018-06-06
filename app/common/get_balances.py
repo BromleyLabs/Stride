@@ -22,16 +22,13 @@ def main():
     ebtc = eth.w3.eth.contract(abi = abi, address = config.eth.token_addr) 
 
     print('User SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.user) / 1e18))
-    print('Custodian SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.custodian) / 1e18))
     print('Destination SBTC: %.10f' % (rsk.w3.eth.getBalance(RSK_DEST_ADDR) / 1e18))
     print('Contract SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.contract_addr) / 1e18))
 
     print('User Eth: %.10f' % (eth.w3.eth.getBalance(config.eth.user) / 1e18))
-    print('Custodian Eth: %.10f' % (eth.w3.eth.getBalance(config.eth.custodian) / 1e18))
     print('Contract Eth: %.10f' % (eth.w3.eth.getBalance(config.eth.contract_addr) / 1e18))
 
     print('User EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.user).call() / 1e18))
-    print('Custodian EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.custodian).call() / 1e18))
     print('Contract EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.contract_addr).call() / 1e18))
     
     
