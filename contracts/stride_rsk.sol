@@ -20,7 +20,7 @@ contract StrideRSKContract is mortal, usingOraclize {
     mapping(bytes32 => RevTxn) m_rev_txns;
     mapping(bytes32 => bytes32) m_query_map;
     uint public m_min_confirmations = 30;
-    string public m_stride_server_url = "binary(http://localhost/stride/ethereum/ropsten);";
+    string public m_stride_server_url = "binary(http://sectechbromley.ddns.net:129/stride/ethereum/ropsten)";
 
     event UserDeposited(address userRSK, uint sbtc_amount);
     event UserRedeemed(address dest_addr, uint sbtc_amount);
@@ -53,6 +53,7 @@ contract StrideRSKContract is mortal, usingOraclize {
 
         bytes32 txn_hash = m_query_map[query_id];
         RevTxn storage txn = m_rev_txns[txn_hash];
+
         require(!txn.redeemed, "Transaction already issued");
 
         bytes memory b = bytes(result);
