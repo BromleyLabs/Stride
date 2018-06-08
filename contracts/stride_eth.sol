@@ -28,7 +28,7 @@ contract StrideEthContract is mortal,usingOraclize {
     event EBTCIssued(address dest_addr, uint ebtc_amount);
     event EBTCSurrendered(address user_eth, uint ebtc_amount);
 
-    function setStrideServerURL(string url) {
+    function setStrideServerURL(string url) public {
         require(msg.sender == m_owner, "Only owner can set this");
         m_stride_server_url = url;
     }
@@ -113,7 +113,7 @@ contract StrideEthContract is mortal,usingOraclize {
        m_query_map[query_id] = txn_hash;
     }
 
-   function redeem(address rsk_dest_addr, uint ebtc_amount) {
+   function redeem(address rsk_dest_addr, uint ebtc_amount) public {
        /* Assumed user has approved EBTC transfer by this contract */ 
        require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, 0x0, 
                                                          ebtc_amount));

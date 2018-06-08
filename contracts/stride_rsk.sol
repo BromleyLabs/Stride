@@ -25,7 +25,7 @@ contract StrideRSKContract is mortal, usingOraclize {
     event UserDeposited(address userRSK, uint sbtc_amount);
     event UserRedeemed(address dest_addr, uint sbtc_amount);
 
-    function setStrideServerURL(string url) {
+    function setStrideServerURL(string url) public {
         require(msg.sender == m_owner, "Only owner can set this");
         m_stride_server_url = url;
     }
