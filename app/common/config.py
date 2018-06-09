@@ -28,7 +28,7 @@ rsk.rpc_addr = 'http://localhost:4444'
 rsk.user = '0x36E7CDF091cbFA3a86611017e813432D98dFD969'
 
 eth = ChainConfig('ETHRopsten')
-eth.contract_addr = ''
+eth.contract_addr = '0xA27a5d5A7ec185D337E91ccB5A5615Ae10B40038'
 eth.contract_name = 'StrideEthContract'
 eth.contract_path = '/home/puneet/crypto/stride/contracts/target'
 eth.token_contract_name = 'EBTCToken'

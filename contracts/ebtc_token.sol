@@ -19,7 +19,6 @@ contract EBTCToken is mortal {
     event Transfer(address indexed from, address indexed to, uint tokens);
     event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
     event Issued(uint tokens);
-    event Burned(uint tokens);
 
     constructor() public {  /* Constructor */
         m_symbol = "EBTC";
@@ -71,14 +70,6 @@ contract EBTCToken is mortal {
         return true;
     }
 
-    function burnTokens(uint tokens) public returns (bool success) {
-        require(msg.sender == m_issuer, "Only issuer can issue fresh tokens");     
-        balances[msg.sender] = balances[msg.sender].sub(tokens);
-        m_total_supply = m_total_supply.sub(tokens);
-        emit Burned(tokens);
-        return true;
-    }
- 
     function () public payable { /* Don't accept any Eth */
         revert();
     }
