@@ -29,40 +29,19 @@ def main():
     ebtc_contract, ebtc_concise = eth.init_contract('EBTCToken', 
                                                         config.eth.token_addr)
 
-    # Set custodian 
-    logger.info('Setting custodian on RSK ..') 
-    tx_hash = rsk_concise.set_custodian(config.rsk.custodian,
+    logger.info('Setting Eth contract address on RSK Contract') 
+    tx_hash = rsk_concise.setEthContractAddr(config.eth.contract_addr,
                                              transact = rsk_tx) 
     rsk.wait_to_be_mined(tx_hash)
 
-    logger.info('Setting custodian on Eth ..') 
-    tx_hash = eth_concise.set_custodian(config.eth.custodian,
+    logger.info('Setting RSK contract address on Eth Contract') 
+    tx_hash = eth_concise.setRSKContractAddr(config.rsk.contract_addr,
                                              transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
 
-    # Set lock interval
-    logger.info('Setting lock interval on RSK ..')
-    tx_hash = rsk_concise.set_lock_interval(100, transact = rsk_tx) 
-    rsk.wait_to_be_mined(tx_hash)
-    
-    logger.info('Setting lock interval on ETH ..')
-    tx_hash = eth_concise.set_lock_interval(100, transact = eth_tx) 
-    eth.wait_to_be_mined(tx_hash)
-    # Set EBTC Token address 
-    logger.info('Setting EBTC token address on Eth ..')
-    tx_hash = eth_concise.set_ebtc_token_address(config.eth.token_addr,
-                                                      transact = eth_tx) 
-    eth.wait_to_be_mined(tx_hash)
-
-    # Set ETH/EBTC ratio
-    logger.info('Setting ETH/EBTC ration on Eth ..')
-    tx_hash = eth_concise.set_eth_ebtc_ratio(15, 1, transact = eth_tx)
-    eth.wait_to_be_mined(tx_hash)
-
-    # Set issuer of EBTC token
-    logger.info('Setting Issuer address on Eth ..')
-    tx_hash = ebtc_concise.setIssuer(config.eth.contract_addr, 
-                                     transact = eth_tx)
+    logger.info('Setting EBTC Token address on Eth Contract') 
+    tx_hash = eth_concise.setEBTCTokenAddress(config.eth.token_addr,
+                                           transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
 
 
