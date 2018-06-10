@@ -9,7 +9,6 @@ import sys
 from common.utils import * 
 from common import config
 
-RSK_DEST_ADDR = '0x8518266aCAe14073776De8371153A3389265d955'
 def main():
 
     logger = init_logger('SCAN', '/tmp/stride.log')
@@ -22,7 +21,7 @@ def main():
     ebtc = eth.w3.eth.contract(abi = abi, address = config.eth.token_addr) 
 
     print('User SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.user) / 1e18))
-    print('Destination SBTC: %.10f' % (rsk.w3.eth.getBalance(RSK_DEST_ADDR) / 1e18))
+    print('Destination SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.dest_addr) / 1e18))
     print('Contract SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.contract_addr) / 1e18))
 
     print('User Eth: %.10f' % (eth.w3.eth.getBalance(config.eth.user) / 1e18))

@@ -18,3 +18,8 @@ curl --include \
 # Transaction info returned by Infura
 
 '{"jsonrpc":"2.0","id":23,"result":{"blockHash":"0x884387db730b4943aa6f9f58965210238b67b10fce7bbfd216689297f3768e0e","blockNumber":"0x33053b","from":"0x81b7e08f65bdf5648606c89998a9cc8164397647","gas":"0x5208","gasPrice":"0x3b9aca00","hash":"0x3a232165aa0ae7ae7ea94a3162ee6a8a829390f167ea83e150af204df8624239","input":"0x","nonce":"0x8aa0f0","to":"0x7647e1203e314a99f31e833083f41036ee0da90d","transactionIndex":"0x8c","value":"0xde0b6b3a7640000","v":"0x1b","r":"0x98bca6d5cf67cd7cc4271b74545ab559924492ba9399cf377b1008aa95ff38cf","s":"0x2a8efbda3d777804a2db26614e5e363933e6852adb949098e532de0bc0409e44"}}
+
+
+# Event data structure
+AttributeDict({'args': AttributeDict({'sbtc_amount': 1000000000000, 'userRSK': '0x36E7CDF091cbFA3a86611017e813432D98dFD969'}), 'blockHash': HexBytes('0x78cb05484d8f7be641c891f371f89653e1fcc5cc21a829665af7362bc66e5ad2'), 'address': '0x02e806DB0B1DF24089223AA2e560819bAD50feb0', 'transactionHash': HexBytes('0x6dd452d0bef3e5efc2c8067bf17239e9a5d8ecdc758cb57102ca0a34938a927c'), 'blockNumber': 563063, 'event': 'UserDeposited', 'logIndex': 0, 'transactionIndex': 0})
+
