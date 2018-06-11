@@ -48,6 +48,10 @@ contract StrideEthContract is mortal,usingOraclize {
         m_ebtc_token_addr = addr;
     }
 
+    function () public payable {
+
+    }
+
     /* Called by Oraclize. 
        result bytes format: current_block(32), txn_block(32), 
                             contract_address(20), dest_addr(20), sbtc(32)
