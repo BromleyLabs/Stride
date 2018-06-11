@@ -80,7 +80,12 @@ def create_app(test_config=None):
     logger = init_logger('STRIDE', '/tmp/stride.log')
     eth = W3Utils(config.eth, logger)
     rsk = W3Utils(config.rsk, logger) 
+    default_page = open('/var/www/html/index.html', 'rt').read()
     
+    @app.route('/', methods=['GET'])
+    def default_response():
+        return default_page
+
     @app.route('/stride/<chain>/<network>', methods=['POST'])
     def get_transaction_by_hash(chain, network):
         try:
