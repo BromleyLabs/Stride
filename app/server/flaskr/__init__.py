@@ -25,10 +25,12 @@ def process_request(js, conf):
         if r['status'] != 1: 
             return binary_response(b'') 
 
-        txn = conf.w3.eth.getTransaction(txn_hex)
-        txn_block = txn['blockNumber'] 
+        txn_block = r['blockNumber']
         if txn_block is None: 
             return binary_response(b'') 
+        txn_index = r['transactionIndex']
+      
+        txn = conf.w3.eth.getTransactionFromBlock(txn_block, txn_index)
 
         txn_block_bytes = txn_block.to_bytes(32, 'big')
 
