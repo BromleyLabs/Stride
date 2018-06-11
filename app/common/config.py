@@ -31,7 +31,7 @@ rsk.user = '0x36E7CDF091cbFA3a86611017e813432D98dFD969' # Checksummed
 rsk.dest_addr = '0x8518266aCAe14073776De8371153A3389265d955'
 
 eth = ChainConfig('ETHRopsten')
-eth.contract_addr = '0xbbAe55D9D8Aa8Fb169852b595f67487e9bDa161E'
+eth.contract_addr = '0xD2DA414D10943f92F095B86DF0C9E0ff49F2c88C'
 eth.contract_name = 'StrideEthContract'
 eth.contract_path = '/home/puneet/crypto/stride/contracts/target'
 eth.token_contract_name = 'EBTCToken'

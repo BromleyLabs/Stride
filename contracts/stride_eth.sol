@@ -101,8 +101,8 @@ contract StrideEthContract is mortal,usingOraclize {
     */
     function issueEBTC(bytes32 txn_hash, string json_request) public { 
         /* There should be enough balance for all Oraclize queries */
-        require(oraclize_getPrice("URL")  > address(this).balance, 
-                                  "Oraclize query not send"); 
+        require(address(this).balance > oraclize_getPrice("URL"),
+                "Oraclize query not send"); 
 
         /* Obtain transaction info from RSK */ 
         bytes32 query_id;
