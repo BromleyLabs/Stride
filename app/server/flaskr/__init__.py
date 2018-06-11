@@ -13,15 +13,14 @@ def binary_response(b):
     resp.headers['Content-Length'] = len(b) 
     return resp
 
-def process_request(js, conf):
+def process_request(method, txn_hash, conf):
     # NOTE: This function needs protections under try/except as we are not
     # doing error checking over here
     
-    if js['method'] == 'eth_getTransactionByHash':
-        txn_hex = js['params'] 
-        txn_hash_bytes = bytes.fromhex(txn_hex[2:]) # params='0x23AB...' 
+    if method == 'eth_getTransactionByHash':
+        txn_hash_bytes = bytes.fromhex(txn_hash[2:]) # params='0x23AB...' 
 
-        r = conf.w3.eth.getTransactionReceipt(txn_hex) 
+        r = conf.w3.eth.getTransactionReceipt(txn_hash) 
         if r['status'] != 1: 
             return binary_response(b'') 
 
@@ -89,12 +88,20 @@ def create_app(test_config=None):
     @app.route('/stride/<chain>/<network>', methods=['POST'])
     def get_transaction_by_hash(chain, network):
         try:
-           if not request.json:
-               logger.info('Request does not have json')
+           logger.info(request.headers)
+           if request.is_json:
+               logger.info('JSON data received')
+               data = request.json
+           elif  request.headers['Content-Type'].strip() == 'application/x-www-form-urlencoded':
+               logger.info('Urlencoded form received')
+               logger.info(request.form)
+               data = request.form
+           else:
+               logger.info('Data not in expected form')
                return binary_response(b'') 
-
-           js = request.json
-           logger.info('Received %s' % js)
+           
+           method = data['method']
+           txn_hash = data['params']
 
            if chain == 'rsk':
                chain_config = rsk 
@@ -103,7 +110,7 @@ def create_app(test_config=None):
            else:
                raise
 
-           return process_request(js, chain_config)
+           return process_request(method, txn_hash, chain_config)
         except:
            exc_type, exc_value, exc_tb = sys.exc_info()
            logger.error(repr(traceback.format_exception(exc_type, exc_value,
