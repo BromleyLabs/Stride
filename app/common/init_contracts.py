@@ -45,8 +45,6 @@ def main():
                                            transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
 
-    '''
-
     logger.info('Setting the server URL on Eth')
     tx_hash = eth_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
@@ -54,7 +52,13 @@ def main():
     logger.info('Setting the server URL on RSK')
     tx_hash = rsk_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = rsk_tx) 
     rsk.wait_to_be_mined(tx_hash)
+    '''
 
+    logger.info('Transfer some Eth to EBTC contract for Oraclize')
+    tx_hash = eth.w3.eth.sendTransaction({'from' : config.eth.user, 
+                                     'to': config.eth.contract_addr,
+                                     'value' : int(0.1 * 10**18)})
+    logger.info(tx_hash)
     
 
 if __name__== '__main__':
