@@ -18,7 +18,7 @@ class ChainConfig:
         self.dest_addr = None  # Destnation address if applicable
 
 rsk = ChainConfig('RSKTestnet')
-rsk.contract_addr = '0x02e806DB0B1DF24089223AA2e560819bAD50feb0'
+rsk.contract_addr = '0xF39Ce4C1B296737e596F3bBd6Dd31aF6acb5AB1b'
 rsk.contract_name = 'StrideRSKContract'
 rsk.contract_path = '/home/puneet/crypto/stride/contracts/target'
 rsk.gas = 2500000
@@ -31,7 +31,7 @@ rsk.user = '0x36E7CDF091cbFA3a86611017e813432D98dFD969' # Checksummed
 rsk.dest_addr = '0x8518266aCAe14073776De8371153A3389265d955'
 
 eth = ChainConfig('ETHRopsten')
-eth.contract_addr = '0xD2DA414D10943f92F095B86DF0C9E0ff49F2c88C'
+eth.contract_addr = '0xE3a344dB405412D5AeCbd9a98173B348f191431F'
 eth.contract_name = 'StrideEthContract'
 eth.contract_path = '/home/puneet/crypto/stride/contracts/target'
 eth.token_contract_name = 'EBTCToken'
