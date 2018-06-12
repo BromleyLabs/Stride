@@ -40,10 +40,12 @@ def process_request(method, txn_hash, conf):
          
         input_bytes = bytes.fromhex(txn['input'][2:])
 
-        dest_addr_bytes = input_bytes[4:24]  # First 4 bytes are method hash
-          
+        offset = 4+12 # 4 bytes of function hash, 12 bytes of padding
+        dest_addr_bytes = input_bytes[offset : offset+20]  
+        offset += 20
+  
         if conf.chain.name == 'ETHRopsten': 
-            amount_bytes = input_bytes[24 : 24+32]
+            amount_bytes = input_bytes[offset : offset+32]
         elif conf.chain.name == 'RSKTestnet':
             amount = txn['value']
             amount_bytes = amount.to_bytes(32, 'big')
