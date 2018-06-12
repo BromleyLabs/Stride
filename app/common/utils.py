@@ -187,18 +187,20 @@ class W3Utils:
                                             'gasPrice': gas_price}) 
         return self.wait_to_be_mined(tx_hash)
 
-    def wait_for_event(self, event_filter, txn_hash, timeout = 200):
+    def wait_for_event(self, event_filter, txn_hash = None, timeout = 200):
         # timout in nblocks
         received = False
         start = self.w3.eth.blockNumber
         while self.w3.eth.blockNumber < start + timeout: 
             events = event_filter.get_new_entries()
             for event in events:
-                if event['transactionHash'] == HexBytes(txn_hash):
-                    self.logger.info('Event received')
-                    self.logger.debug(event)
-                    received = True 
-                    break
+                if txn_hash is not None:
+                    if event['transactionHash'] != HexBytes(txn_hash):
+                        continue
+                self.logger.info('Event received')
+                self.logger.debug(event)
+                received = True 
+                break
             if received:
                 break
             time.sleep(3)
