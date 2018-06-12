@@ -23,7 +23,7 @@ contract StrideEthContract is mortal,usingOraclize {
     mapping(bytes32 => FwdTxn) m_fwd_txns;
     mapping(bytes32 => bytes32) m_query_map;
     uint public m_min_confirmations = 30;
-    string public m_stride_server_url = "binary(https://sectechbromley.ddns.net:/stride/rsk/testnet).slice(0, 136)";
+    string public m_stride_server_url = "binary(https://sectechbromley.ddns.net/stride/rsk/testnet).slice(0, 136)";
 
     event EBTCIssued(address dest_addr, uint ebtc_amount);
     event EBTCSurrendered(address user_eth, uint ebtc_amount);
@@ -57,7 +57,7 @@ contract StrideEthContract is mortal,usingOraclize {
                             contract_address(20), dest_addr(20), sbtc(32)
     */  
     function __callback(bytes32 query_id, string result) public {
-        require(msg.sender != oraclize_cbAddress());
+        require(msg.sender == oraclize_cbAddress());
 
         bytes32 txn_hash = m_query_map[query_id];
         FwdTxn storage txn = m_fwd_txns[txn_hash];

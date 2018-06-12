@@ -28,7 +28,6 @@ def main():
                                                       config.rsk.contract_addr) 
     ebtc_contract, ebtc_concise = eth.init_contract('EBTCToken', 
                                                         config.eth.token_addr)
-
     '''
     logger.info('Setting Eth contract address on RSK Contract') 
     tx_hash = rsk_concise.setEthContractAddr(config.eth.contract_addr,
@@ -45,6 +44,11 @@ def main():
                                            transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
 
+    logger.info('Setting m_issuer on Token address on Eth Contract') 
+    tx_hash = ebtc_concise.setIssuer(config.eth.contract_addr,
+                                           transact = eth_tx) 
+    eth.wait_to_be_mined(tx_hash)
+
     logger.info('Setting the server URL on Eth')
     tx_hash = eth_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
@@ -52,13 +56,21 @@ def main():
     logger.info('Setting the server URL on RSK')
     tx_hash = rsk_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = rsk_tx) 
     rsk.wait_to_be_mined(tx_hash)
-    '''
 
     logger.info('Transfer some Eth to EBTC contract for Oraclize')
     tx_hash = eth.w3.eth.sendTransaction({'from' : config.eth.user, 
                                      'to': config.eth.contract_addr,
                                      'value' : int(0.1 * 10**18)})
     logger.info(tx_hash)
+    '''
+
+    logger.info('Set Min confirmation on RSK')
+    tx_hash = rsk_concise.setMinConfirmations(1, transact = rsk_tx) 
+    rsk.wait_to_be_mined(tx_hash)
+
+    logger.info('Set Min confirmation on Eth')
+    tx_hash = eth_concise.setMinConfirmations(1, transact = eth_tx) 
+    eth.wait_to_be_mined(tx_hash)
     
 
 if __name__== '__main__':

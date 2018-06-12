@@ -27,18 +27,35 @@ class App:
 
 
     def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
-        # Transfer SBTC to RSK contract
+        '''
+        # Deposit SBTC to RSK contract
         self.logger.info('Depositing SBTC to RSK contract ..')
         self.rsk_tx['value'] = sbtc_amount
-        # Transfer to User's Eth address
         txn_hash = self.rsk_concise.depositSBTC(config.eth.user, 
                                                transact = self.rsk_tx) 
+        self.logger.info('txn_hash: %s' % txn_hash)
         self.w3_rsk.wait_to_be_mined(txn_hash) # TODO: Check for timeout
-   
         self.logger.info('Wait for success log of above txn')
-        event_filter = self.rsk_contract.events.UserDeposited.createFilter(fromBlock = 'latest')
+        event_filter = self.rsk_contract.events.UserDeposited.\
+                           createFilter(fromBlock = 'latest')
         event = self.w3_rsk.wait_for_event(event_filter, txn_hash)
 
+        '''
+        txn_hash_deposit = '0xcae079107bebd6036cb5e45339c0876196460f5c11973f0f94450e85e430f2e8'
+        # Request EBTC issue on Eth
+        js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
+                         "method" : "eth_getTransactionByHash", 
+                         "params" : ["%s" % txn_hash_deposit]})
+        self.logger.info('Requesting issue of EBTC ..') 
+        hash_bytes = self.w3_eth.w3.toBytes(hexstr = txn_hash_deposit) 
+        txn_hash = self.eth_concise.issueEBTC(hash_bytes, js, 
+                                              transact = self.eth_tx )
+        self.w3_eth.wait_to_be_mined(txn_hash) # TODO: Check for timeout
+
+        self.logger.info('Wait for EBTC issued event') 
+        event_filter = self.eth_contract.events.EBTCIssued.\
+                           createFilter(fromBlock = 'latest')
+        event = self.w3_eth.wait_for_event(event_filter, None) 
 
 def main():
     if len(sys.argv) != 3:

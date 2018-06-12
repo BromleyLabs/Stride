@@ -49,7 +49,7 @@ contract StrideRSKContract is mortal, usingOraclize {
                             contract_address(20), dest_addr(20), sbtc(32)
     */  
     function __callback(bytes32 query_id, string result) public {
-        require(msg.sender != oraclize_cbAddress());
+        require(msg.sender == oraclize_cbAddress());
 
         bytes32 txn_hash = m_query_map[query_id];
         RevTxn storage txn = m_rev_txns[txn_hash];
