@@ -29,6 +29,7 @@ def main():
     ebtc_contract, ebtc_concise = eth.init_contract('EBTCToken', 
                                                         config.eth.token_addr)
 
+    '''
     logger.info('Setting Eth contract address on RSK Contract') 
     tx_hash = rsk_concise.setEthContractAddr(config.eth.contract_addr,
                                              transact = rsk_tx) 
@@ -44,6 +45,17 @@ def main():
                                            transact = eth_tx) 
     eth.wait_to_be_mined(tx_hash)
 
+    '''
+
+    logger.info('Setting the server URL on Eth')
+    tx_hash = eth_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = eth_tx) 
+    eth.wait_to_be_mined(tx_hash)
+
+    logger.info('Setting the server URL on RSK')
+    tx_hash = rsk_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = rsk_tx) 
+    rsk.wait_to_be_mined(tx_hash)
+
+    
 
 if __name__== '__main__':
     main()
