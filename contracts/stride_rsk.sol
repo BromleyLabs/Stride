@@ -25,6 +25,10 @@ contract StrideRSKContract is mortal, usingOraclize {
     event UserDeposited(address userRSK, uint sbtc_amount);
     event UserRedeemed(address dest_addr, uint sbtc_amount);
 
+    function () public payable {
+
+    }
+
     function setStrideServerURL(string url) public {
         require(msg.sender == m_owner, "Only owner can set this");
         m_stride_server_url = url;
@@ -93,7 +97,7 @@ contract StrideRSKContract is mortal, usingOraclize {
     */
     function redeem(bytes32 txn_hash, string json_request) public { 
         /* There should be enough balance for all Oraclize queries */
-        require(oraclize_getPrice("URL")  > address(this).balance, 
+        require(address(this).balance > oraclize_getPrice("URL"), 
                                   "Oraclize query not send"); 
 
         /* Obtain transaction info from RSK */ 
