@@ -25,9 +25,7 @@ class App:
         self.rsk_tx = {'from' : config.rsk.user, 'gas' : config.rsk.gas, 
                        'gasPrice' : config.rsk.gas_price, 'value' : 0} 
 
-
-    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
-        '''
+    def deposit(self, sbtc_amount):
         # Deposit SBTC to RSK contract
         self.logger.info('Depositing SBTC to RSK contract ..')
         self.rsk_tx['value'] = sbtc_amount
@@ -39,9 +37,9 @@ class App:
         event_filter = self.rsk_contract.events.UserDeposited.\
                            createFilter(fromBlock = 'latest')
         event = self.w3_rsk.wait_for_event(event_filter, txn_hash)
-
-        '''
-        txn_hash_deposit = '0xcae079107bebd6036cb5e45339c0876196460f5c11973f0f94450e85e430f2e8'
+        return txn_hash
+   
+    def issue_ebtc(self, txn_hash_deposit):
         # Request EBTC issue on Eth
         js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
                          "method" : "eth_getTransactionByHash", 
@@ -56,6 +54,12 @@ class App:
         event_filter = self.eth_contract.events.EBTCIssued.\
                            createFilter(fromBlock = 'latest')
         event = self.w3_eth.wait_for_event(event_filter, None) 
+
+    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
+
+        txn_hash_deposit = self.deposit(sbtc_amount) 
+       
+        self.issue_ebtc(txn_hash_deposit)
 
 def main():
     if len(sys.argv) != 3:
