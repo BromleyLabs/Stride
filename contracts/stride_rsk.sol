@@ -5,7 +5,7 @@ pragma solidity ^0.4.23;
 import "safe_math.sol";
 import "mortal.sol";
 import "utils.sol";
-import "github.com/oraclize/ethereum-api/oraclizeAPI_0.5.sol";
+import "github.com/oraclize/rsk-api/oraclizeAPI_0.4.sol";
 
 contract StrideRSKContract is mortal, usingOraclize {
     using SafeMath for uint;
