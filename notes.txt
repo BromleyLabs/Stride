@@ -23,3 +23,8 @@ curl --include \
 # Event data structure
 AttributeDict({'args': AttributeDict({'sbtc_amount': 1000000000000, 'userRSK': '0x36E7CDF091cbFA3a86611017e813432D98dFD969'}), 'blockHash': HexBytes('0x78cb05484d8f7be641c891f371f89653e1fcc5cc21a829665af7362bc66e5ad2'), 'address': '0x02e806DB0B1DF24089223AA2e560819bAD50feb0', 'transactionHash': HexBytes('0x6dd452d0bef3e5efc2c8067bf17239e9a5d8ecdc758cb57102ca0a34938a927c'), 'blockNumber': 563063, 'event': 'UserDeposited', 'logIndex': 0, 'transactionIndex': 0})
 
+==============
+To access Parity from outside like http://stride.ddns.net:8545, give --jsonrpc-intefaces=all option while running Parity
+
+To access RSK from outside like http://stride.ddns.net:4444, in /etc/rsk/*.conf file under rpc { }   add "stride.ddns.net" in hosts list and restart 
+
