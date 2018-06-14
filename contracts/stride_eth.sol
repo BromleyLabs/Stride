@@ -23,7 +23,7 @@ contract StrideEthContract is mortal,usingOraclize {
     mapping(bytes32 => FwdTxn) m_fwd_txns;
     mapping(bytes32 => bytes32) m_query_map;
     uint public m_min_confirmations = 30;
-    string public m_stride_server_url = "binary(https://sectechbromley.ddns.net/stride/rsk/testnet).slice(0, 136)";
+    string public m_stride_server_url = "binary(https://stride.ddns.net/stride/rsk/testnet).slice(0, 136)";
 
     event EBTCIssued(address dest_addr, uint ebtc_amount);
     event EBTCSurrendered(address user_eth, uint ebtc_amount);
