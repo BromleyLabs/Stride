@@ -20,15 +20,15 @@ def main():
     abi = open(path, 'rt').read()
     ebtc = eth.w3.eth.contract(abi = abi, address = config.eth.token_addr) 
 
-    print('User SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.user) / 1e18))
-    print('Destination SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.dest_addr) / 1e18))
-    print('Contract SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.contract_addr) / 1e18))
+    print('RSK User SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.user) / 1e18))
+    print('RSK Destination SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.dest_addr) / 1e18))
+    print('RSK Contract SBTC: %.10f' % (rsk.w3.eth.getBalance(config.rsk.contract_addr) / 1e18))
 
-    print('User Eth: %.10f' % (eth.w3.eth.getBalance(config.eth.user) / 1e18))
-    print('Contract Eth: %.10f' % (eth.w3.eth.getBalance(config.eth.contract_addr) / 1e18))
+    print('ETH User Ether: %.10f' % (eth.w3.eth.getBalance(config.eth.user) / 1e18))
+    print('ETH Contract Ether: %.10f' % (eth.w3.eth.getBalance(config.eth.contract_addr) / 1e18))
 
-    print('User EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.user).call() / 1e18))
-    print('Contract EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.contract_addr).call() / 1e18))
+    print('ETH User EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.user).call() / 1e18))
+    print('ETH Contract EBTC: %.10f' % (ebtc.functions.balanceOf(config.eth.contract_addr).call() / 1e18))
     
     
 
