@@ -25,12 +25,13 @@ class App:
         self.rsk_tx = {'from' : config.rsk.user, 'gas' : config.rsk.gas, 
                        'gasPrice' : config.rsk.gas_price, 'value' : 0} 
 
-    def deposit(self, sbtc_amount):
+    def fwd_deposit(self, sbtc_amount):
         # Deposit SBTC to RSK contract
         self.logger.info('Depositing SBTC to RSK contract ..')
         self.rsk_tx['value'] = sbtc_amount
         txn_hash = self.rsk_concise.depositSBTC(config.eth.user, 
                                                transact = self.rsk_tx) 
+        self.rsk_tx['value'] = 0
         self.logger.info('txn_hash: %s' % txn_hash)
         self.w3_rsk.wait_to_be_mined(txn_hash) # TODO: Check for timeout
         self.logger.info('Wait for success log of above txn')
@@ -39,7 +40,7 @@ class App:
         event = self.w3_rsk.wait_for_event(event_filter, txn_hash)
         return txn_hash
    
-    def issue_ebtc(self, txn_hash_deposit):
+    def fwd_issue_ebtc(self, txn_hash_deposit):
         # Request EBTC issue on Eth
         js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
                          "method" : "eth_getTransactionByHash", 
@@ -48,18 +49,58 @@ class App:
         hash_bytes = self.w3_eth.w3.toBytes(hexstr = txn_hash_deposit) 
         txn_hash = self.eth_concise.issueEBTC(hash_bytes, js, 
                                               transact = self.eth_tx )
-        self.w3_eth.wait_to_be_mined(txn_hash) # TODO: Check for timeout
+        self.w3_eth.wait_to_be_mined(txn_hash) 
 
         self.logger.info('Wait for EBTC issued event') 
         event_filter = self.eth_contract.events.EBTCIssued.\
                            createFilter(fromBlock = 'latest')
         event = self.w3_eth.wait_for_event(event_filter, None) 
 
-    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
+    def rev_approve_ebtc(self):
+        self.logger.info('Approve Eth contract to move EBTC')
+        txn_hash = self.ebtc_concise.approve(config.eth.contract_addr, 
+                                            10 * 10**18, 
+                                            transact = self.eth_tx)
+        self.logger.info('Tx hash: %s' % HexBytes(txn_hash).hex())
+        self.w3_eth.wait_to_be_mined(txn_hash) 
 
-        txn_hash_deposit = self.deposit(sbtc_amount) 
-       
-        self.issue_ebtc(txn_hash_deposit)
+    def rev_redeem_ebtc(self, ebtc_amount):
+        self.logger.info('Surrending EBTC ..')   
+        txn_hash = self.eth_concise.redeem(config.rsk.dest_addr, ebtc_amount,
+                                           transact = self.eth_tx)
+        self.w3_eth.wait_to_be_mined(txn_hash) 
+
+        self.logger.info('Wait for EBTCSurrendered event')
+        event_filter = self.eth_contract.events.EBTCSurrendered.\
+                           createFilter(fromBlock = 'latest')
+        event = self.w3_eth.wait_for_event(event_filter, txn_hash) 
+        return txn_hash
+
+    def rev_redeem_sbtc(self, txn_hash):     
+        self.logger.info('Redeeming SBTC..')
+      
+        js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
+                         "method" : "eth_getTransactionByHash", 
+                         "params" : ["%s" % txn_hash]})
+        hash_bytes = self.w3_rsk.w3.toBytes(hexstr = txn_hash)
+        txn_hash = self.rsk_concise.redeem(hash_bytes, js, 
+                                           transact = self.rsk_tx)
+        self.w3_rsk.wait_to_be_mined(txn_hash) 
+
+        self.logger.info('Wait for UserRedeemed event') 
+        event_filter = self.rsk_contract.events.UserRedeemed.\
+                           createFilter(fromBlock = 'latest')
+        event = self.w3_rsk.wait_for_event(event_filter, None) 
+
+    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
+        txn_hash = self.fwd_deposit(sbtc_amount) 
+        self.fwd_issue_ebtc(txn_hash)
+
+    def run_rev_txn(self, ebtc_amount):
+        #self.rev_approve_ebtc()
+        #txn_hash = self.rev_redeem_ebtc(ebtc_amount) 
+        txn_hash = '0x9d11a21d0a2ca8a644a62a70c67ae740adc193e31c1e23079b307e0836c93ab4'
+        self.rev_redeem_sbtc(txn_hash)
 
 def main():
     if len(sys.argv) != 3:
@@ -70,6 +111,8 @@ def main():
     app = App('/tmp/stride.log')
     if sys.argv[1] == 'fwd':
         app.run_fwd_txn(wei)
+    elif sys.argv[1] == 'rev':
+        app.run_rev_txn(wei)
     else:
         print('Invalid argument')
         exit(0)
