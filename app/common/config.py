@@ -18,11 +18,11 @@ class ChainConfig:
         self.dest_addr = None  # Destnation address if applicable
 
 rsk = ChainConfig('RSKTestnet')
-rsk.contract_addr = '0x55FCE72F2cEe9Ca53F774DD91f36c107E9A17a7f'
+rsk.contract_addr = '0xA03c9c5aF91E88c1931641250e1053c7d26E2bdd'
 rsk.contract_name = 'StrideRSKContract'
 rsk.contract_path = '/home/puneet/crypto/stride/contracts/target'
 rsk.gas = 2500000
-rsk.gas_price = 1
+rsk.gas_price = 1 
 rsk.token_addr = '' # NA. SBTC is currency, not token 
 rsk.contract_owner = '0x36E7CDF091cbFA3a86611017e813432D98dFD969'
 rsk.rpc_addr = 'http://localhost:4444'
