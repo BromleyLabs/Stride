@@ -54,12 +54,12 @@ class App:
     
     def set_server_url_on_eth(self):
         self.logger.info('Setting the server URL on Eth')
-        txn_hash = self.eth_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = self.eth_tx) 
+        txn_hash = self.eth_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = self.eth_tx) 
         self.eth.wait_to_be_mined(txn_hash)
      
     def set_server_url_rsk(self):
        self.logger.info('Setting the server URL on RSK')
-       txn_hash = self.rsk_concise.setStrideServerURL("binary(https://sectechbromley.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = self.rsk_tx) 
+       txn_hash = self.rsk_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = self.rsk_tx) 
        self.rsk.wait_to_be_mined(txn_hash)
 
     def transfer_ether_from_user_to_eth(self, wei):
@@ -104,6 +104,11 @@ if __name__== '__main__':
     
     # Rsk
     app.set_eth_contract_addr_on_rsk()
-    app.set_min_confirmations_on_rsk(1)
+    app.set_min_confirmations_on_rsk(1) # Only for testing
     app.transfer_sbtc_from_user_to_rsk(int(0.0001 * 10**18))
 
+    #Eth
+    app.set_rsk_contract_addr_on_eth() # Only for testing
+    app.set_min_confirmations_on_eth(1)
+    app.transfer_ether_from_user_to_eth(int(0.0001 * 10**18))
+    app.set_ebtc_token_addr_on_eth()
