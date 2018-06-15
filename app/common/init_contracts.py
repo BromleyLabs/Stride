@@ -30,37 +30,30 @@ class App:
 
     def set_eth_contract_addr_on_rsk(self): 
         self.logger.info('Setting Eth contract address on RSK Contract') 
-        txn_hash = self.rsk_concise.setEthContractAddr(config.eth.contract_addr,
+        return self.rsk_concise.setEthContractAddr(config.eth.contract_addr,
                                                      transact = self.rsk_tx) 
-        self.rsk.wait_to_be_mined(txn_hash)
 
     def set_rsk_contract_addr_on_eth(self):
         self.logger.info('Setting RSK contract address on Eth Contract') 
-        txn_hash = self.eth_concise.setRSKContractAddr(config.rsk.contract_addr,
+        return self.eth_concise.setRSKContractAddr(config.rsk.contract_addr,
                                                       transact = self.eth_tx) 
-        self.eth.wait_to_be_mined(txn_hash)
 
     def set_ebtc_token_addr_on_eth(self):
         self.logger.info('Setting EBTC Token address on Eth Contract') 
-        txn_hash = self.eth_concise.setEBTCTokenAddress(config.eth.token_addr,
+        return self.eth_concise.setEBTCTokenAddress(config.eth.token_addr,
                                                        transact = self.eth_tx) 
-        self.eth.wait_to_be_mined(txn_hash)
-
     def set_issuer_on_ebtc_token(self):
         self.logger.info('Setting m_issuer on Token address on Eth Contract') 
-        txn_hash = self.ebtc_concise.setIssuer(config.eth.contract_addr,
+        return self.ebtc_concise.setIssuer(config.eth.contract_addr,
                                               transact = self.eth_tx) 
-        self.eth.wait_to_be_mined(txn_hash)
-    
+
     def set_server_url_on_eth(self):
         self.logger.info('Setting the server URL on Eth')
-        txn_hash = self.eth_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = self.eth_tx) 
-        self.eth.wait_to_be_mined(txn_hash)
+        return self.eth_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = self.eth_tx) 
      
     def set_server_url_rsk(self):
        self.logger.info('Setting the server URL on RSK')
-       txn_hash = self.rsk_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = self.rsk_tx) 
-       self.rsk.wait_to_be_mined(txn_hash)
+       return self.rsk_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = self.rsk_tx) 
 
     def transfer_ether_from_user_to_eth(self, wei):
         self.logger.info('Transfer some Eth to Eth contract for Oraclize')
@@ -84,16 +77,11 @@ class App:
 
     def set_min_confirmations_on_rsk(self, n):
         self.logger.info('Set Min confirmation on RSK')
-        txn_hash = self.rsk_concise.setMinConfirmations(n, 
-                                                        transact = self.rsk_tx) 
-        self.rsk.wait_to_be_mined(txn_hash)
+        return self.rsk_concise.setMinConfirmations(n, transact = self.rsk_tx) 
 
     def set_min_confirmations_on_eth(self, n):
         self.logger.info('Set Min confirmation on Eth')
-        txn_hash = self.eth_concise.setMinConfirmations(n, 
-                                                        transact = self.eth_tx) 
-        self.eth.wait_to_be_mined(txn_hash)
-    
+        return self.eth_concise.setMinConfirmations(n, transact = self.eth_tx) 
 
 if __name__== '__main__':
     if len(sys.argv) != 1:
@@ -103,12 +91,31 @@ if __name__== '__main__':
     app = App('/tmp/stride.log')
     
     # Rsk
-    #app.set_eth_contract_addr_on_rsk()
-    #app.set_min_confirmations_on_rsk(1) # Only for testing
-    #app.transfer_sbtc_from_user_to_rsk(int(0.0001 * 10**18))
+    rsk_txns = [] 
+    '''
+    txn = app.set_eth_contract_addr_on_rsk()
+    rsk_txns.append(txn)
+
+    txn = app.set_min_confirmations_on_rsk(1) # Only for testing
+    rsk_txns.append(txn)
+
+    app.transfer_sbtc_from_user_to_rsk(int(0.0001 * 10**18))
+
+    app.rsk.wait_to_be_mined_batch(rsk_txns)
+    '''
 
     #Eth
-    #app.set_rsk_contract_addr_on_eth() # Only for testing
-    app.set_min_confirmations_on_eth(1)
-    #app.transfer_ether_from_user_to_eth(int(0.0001 * 10**18))
-    #app.set_ebtc_token_addr_on_eth()
+    eth_txns = []
+
+    txn = app.set_rsk_contract_addr_on_eth() # Only for testing
+    eth_txns.append(txn)
+
+    txn = app.set_min_confirmations_on_eth(1)
+    eth_txns.append(txn)
+
+    app.transfer_ether_from_user_to_eth(int(0.0001 * 10**18))
+
+    txn = app.set_ebtc_token_addr_on_eth()
+    eth_txns.append(txn)
+
+    app.eth.wait_to_be_mined_batch(eth_txns)

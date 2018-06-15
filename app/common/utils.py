@@ -141,14 +141,14 @@ class W3Utils:
         self.logger.info('Waiting for transactions to get mined')
         handled = [] 
         while len(handled) != len(txn_hashes): 
+            time.sleep(5)
             for i, txn_hash in enumerate(txn_hashes):
                 if txn_hash in handled: 
                     continue
                 txn_receipt, status = self.get_transaction_receipt(txn_hash)  
                 if status == 'error' or status == 'mined':
                     handled.append(txn_hash)
-            time.sleep(5)
-        logger.info('All transactions handled')
+        self.logger.info('All transactions handled')
     
     def erc20_approve(self, erc20_address, from_addr, to_addr, amount, 
                       gas, gas_price):
