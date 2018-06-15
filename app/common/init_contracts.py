@@ -103,12 +103,12 @@ if __name__== '__main__':
     app = App('/tmp/stride.log')
     
     # Rsk
-    app.set_eth_contract_addr_on_rsk()
-    app.set_min_confirmations_on_rsk(1) # Only for testing
-    app.transfer_sbtc_from_user_to_rsk(int(0.0001 * 10**18))
+    #app.set_eth_contract_addr_on_rsk()
+    #app.set_min_confirmations_on_rsk(1) # Only for testing
+    #app.transfer_sbtc_from_user_to_rsk(int(0.0001 * 10**18))
 
     #Eth
-    app.set_rsk_contract_addr_on_eth() # Only for testing
+    #app.set_rsk_contract_addr_on_eth() # Only for testing
     app.set_min_confirmations_on_eth(1)
-    app.transfer_ether_from_user_to_eth(int(0.0001 * 10**18))
-    app.set_ebtc_token_addr_on_eth()
+    #app.transfer_ether_from_user_to_eth(int(0.0001 * 10**18))
+    #app.set_ebtc_token_addr_on_eth()
