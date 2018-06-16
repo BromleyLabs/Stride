@@ -40,6 +40,6 @@ eth.gas_price = 25000000000
 eth.token_addr = '0x4d9Bf35908CDa388b34BE67c880F81E53fDaE7a7' # EBTC token address
 eth.contract_owner = '0x25178B671b933b8cF7c25086C3408856c6dfC52C'
 eth.rpc_addr = 'http://localhost:8545'
-eth.user = '0x25178B671b933b8cF7c25086C3408856c6dfC52C' 
+eth.user = '0x9d465C631F1D8E47B6113Ab204a9410183fcCE05'
 eth.dest_addr = '' # NA
 
