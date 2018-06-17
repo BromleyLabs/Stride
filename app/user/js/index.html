@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+    <script src="./node_modules/web3/dist/web3.min.js"></script>
+
+</head>
+<body>
+    <div class="container">
+
+        <h1>Deposit SBTC</h1>
+
+        <label for="name" class="col-lg-2 control-label">User address</label>
+        <input id="user" type="text" value="0x36E7CDF091cbFA3a86611017e813432D98dFD969">
+
+        <label for="name" class="col-lg-2 control-label">SBTC</label>
+        <input id="sbtc" type="any" value="0.00000001">
+
+        <label for="name" class="col-lg-2 control-label">Destination address</label>
+        <input id="dest" type="any" value="0x9d465C631F1D8E47B6113Ab204a9410183fcCE05">
+
+        <h3 id="status">Status</h3>
+
+        <button id="button">Deposit on RSK</button>
+
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+
+    <script>
+         
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:4444"));
+        var contract = web3.eth.contract([{"constant":false,"inputs":[{"name":"url","type":"string"}],"name":"setStrideServerURL","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"addr","type":"address"}],"name":"setEthContractAddr","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"query_id","type":"bytes32"},{"name":"result","type":"string"}],"name":"__callback","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"myid","type":"bytes32"},{"name":"result","type":"string"},{"name":"proof","type":"bytes"}],"name":"__callback","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"kill","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"m_eth_addr","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"txn_hash","type":"bytes32"},{"name":"json_request","type":"string"}],"name":"redeem","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"m_stride_server_url","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"eth_dest_addr","type":"address"}],"name":"depositSBTC","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"n","type":"uint256"}],"name":"setMinConfirmations","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"m_min_confirmations","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":false,"name":"userRSK","type":"address"},{"indexed":false,"name":"sbtc_amount","type":"uint256"}],"name":"UserDeposited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"dest_addr","type":"address"},{"indexed":false,"name":"sbtc_amount","type":"uint256"}],"name":"UserRedeemed","type":"event"}]);
+
+        var stride_rsk = contract.at('0xc589638371dB9C7D00003a8E638A6b4910097996'); 
+        console.log(stride_rsk);
+        $("#button").click(function() {
+            var account = document.getElementById("user").value; 
+            web3.eth.defaultAccount = account;
+            web3.personal.unlockAccount(web3.eth.defaultAccount, "puneet");
+            console.info("account unlocked");
+            var sbtc = parseFloat(document.getElementById("sbtc").value); 
+            sbtc_wei = web3.toWei(sbtc, "ether"); 
+            var dest = document.getElementById("dest").value;
+            var done = false;
+            var err = false;
+            console.info("calling deposit");
+            document.getElementById("status").innerHTML = "Processing ..";
+            stride_rsk.depositSBTC(dest, {
+                    from: account, 
+                    gasPrice: "1", 
+                    gas: 4000000, 
+                    value: sbtc_wei
+                }, function(error, txn_hash) {
+                    if (error) {
+                        console.error(error);
+                        document.getElementById("status").innerHTML = "ERROR";
+                        err = true;
+                    }
+                    else { 
+                        console.info(txn_hash);
+                    } 
+                }
+            );
+ 
+            console.info("Method called. Waiting to get mined");
+           
+            // Wait for txn to get mined  
+            var receipt;
+            var n = 0;
+            if(!err) {
+                setTimeout(function() {
+                    console.info("Getting txn receipt");
+                    receipt = web3.eth.getTransactionReceipt(txn_hash);
+                    if (receipt != null) { 
+                        console.info(receipt);
+                        done = true;
+                    } else {
+                        document.getElementById("status").innerHTML = "Waiting: " + String(n);
+                    } 
+                }, 5000); 
+            } 
+            console.log("Txn done");
+        });
+    </script>
+
+</body>
+</html>
