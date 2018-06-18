@@ -33,13 +33,19 @@
 
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script>
-    function wait_for_txn_receipt(txn_hash) {
+    function wait_to_be_mined(txhash) {
         console.info("Getting txn receipt");
-        web3.eth.getTransactionReceipt(txn_hash, function(error, result) { 
-            if(error) 
-                console.error("Error in getting txn receipt");
-            else
-                console.info(result);
+        web3.eth.getTransactionReceipt(txhash, function (err, result) {
+            if (!err && !result) {
+                // Try again with a bit of delay
+                setTimeout(function () {wait_to_be_mined (txhash) }, 2000);
+                console.info("Trying to get receipt again");
+            } else {
+                if (err)
+                    console.error("ERROR in Transaction"); 
+                else
+                    console.info("Transaction mined"); 
+            }
         });
     }
     </script>
@@ -78,7 +84,7 @@
                     else { 
                         txn_hash = result;
                         console.info(txn_hash);
-                        wait_for_txn_receipt(txn_hash);
+                        wait_to_be_mined(txn_hash);
                     } 
                 }
             );
