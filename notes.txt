@@ -28,3 +28,14 @@ To access Parity from outside like http://stride.ddns.net:8545, give --jsonrpc-i
 
 To access RSK from outside like http://stride.ddns.net:4444, in /etc/rsk/*.conf file under rpc { }   add "stride.ddns.net" in hosts list and restart 
 
+============
+To unlock accounts on Web3.js (for javascript), you have to define defaultAccount like this and unlock it to use an address.
+
+
+web3.eth.defaultAccount = web3.eth.accounts[0]
+personal.unlockAccount(web3.eth.defaultAccount)
+===============
+
+To access Parity via javascript in a webpage using, say, "http://locahost:8545/index.html"  you have to start Parity with --jsonrpc-cors=all option. 
+
+For RSK set "cors" field testnet.conf to "*"

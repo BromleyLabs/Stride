@@ -92,17 +92,15 @@ if __name__== '__main__':
     
     # Rsk
     rsk_txns = [] 
-    '''
     txn = app.set_eth_contract_addr_on_rsk()
     rsk_txns.append(txn)
 
     txn = app.set_min_confirmations_on_rsk(1) # Only for testing
     rsk_txns.append(txn)
 
-    app.transfer_sbtc_from_user_to_rsk(int(0.0001 * 10**18))
+    app.transfer_sbtc_from_user_to_rsk(int(0.001 * 10**18))
 
     app.rsk.wait_to_be_mined_batch(rsk_txns)
-    '''
 
     #Eth
     eth_txns = []
@@ -111,11 +109,17 @@ if __name__== '__main__':
     eth_txns.append(txn)
 
     txn = app.set_min_confirmations_on_eth(1)
+    app.eth.wait_to_be_mined(txn)
     eth_txns.append(txn)
 
-    app.transfer_ether_from_user_to_eth(int(0.0001 * 10**18))
+    app.transfer_ether_from_user_to_eth(int(0.02 * 10**18))
 
     txn = app.set_ebtc_token_addr_on_eth()
     eth_txns.append(txn)
 
+    txn = app.set_issuer_on_ebtc_token()
+    eth_txns.append(txn)
+
     app.eth.wait_to_be_mined_batch(eth_txns)
+
+
