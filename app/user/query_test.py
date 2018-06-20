@@ -1,12 +1,12 @@
 import json
 import requests
 
-ETH_TXN = '0x9d11a21d0a2ca8a644a62a70c67ae740adc193e31c1e23079b307e0836c93ab4'
+ETH_TXN = '0x30ed16405e1c15c037504458d235122e5153db36bb5c3923f726720436ba8a3a'
 RSK_TXN = '0x007b1ba4ee65b1a3d46fbeb4249ef7256f9c0efc25e2fbcf44c421b2fffc11ec'
-TXN = RSK_TXN
-ETH_PORTAL = 'https://sectechbromley.ddns.net/stride/ethereum/ropsten'
-RSK_PORTAL = 'https://sectechbromley.ddns.net/stride/rsk/testnet'
-PORTAL = RSK_PORTAL
+TXN = ETH_TXN
+ETH_PORTAL = 'https://stride.ddns.net/stride/ethereum/ropsten'
+RSK_PORTAL = 'https://stride.ddns.net/stride/rsk/testnet'
+PORTAL = ETH_PORTAL
 
 js = {'jsonrpc' : '2.0', 'id' : 23, 'method' : 'eth_getTransactionByHash', 
       'params' :  TXN}

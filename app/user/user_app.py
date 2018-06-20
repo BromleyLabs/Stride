@@ -32,8 +32,9 @@ class App:
         txn_hash = self.rsk_concise.depositSBTC(config.eth.user, 
                                                transact = self.rsk_tx) 
         self.rsk_tx['value'] = 0
-        self.logger.info('txn_hash: %s' % txn_hash)
-        self.w3_rsk.wait_to_be_mined(txn_hash) # TODO: Check for timeout
+        self.logger.info('txn hash: %s' % HexBytes(txn_hash).hex())
+        self.w3_rsk.wait_to_be_mined(txn_hash)
+
         self.logger.info('Wait for success log of above txn')
         event_filter = self.rsk_contract.events.UserDeposited.\
                            createFilter(fromBlock = 'latest')
@@ -44,10 +45,9 @@ class App:
         # Request EBTC issue on Eth
         js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
                          "method" : "eth_getTransactionByHash", 
-                         "params" : ["%s" % txn_hash_deposit]})
+                         "params" : "%s" % HexBytes(txn_hash_deposit).hex()})
         self.logger.info('Requesting issue of EBTC ..') 
-        hash_bytes = self.w3_eth.w3.toBytes(hexstr = txn_hash_deposit) 
-        txn_hash = self.eth_concise.issueEBTC(hash_bytes, js, 
+        txn_hash = self.eth_concise.issueEBTC(txn_hash_deposit, js, 
                                               transact = self.eth_tx )
         self.w3_eth.wait_to_be_mined(txn_hash) 
 
@@ -76,14 +76,13 @@ class App:
         event = self.w3_eth.wait_for_event(event_filter, txn_hash) 
         return txn_hash
 
-    def rev_redeem_sbtc(self, txn_hash):     
+    def rev_redeem_sbtc(self, txn_hash_redeem):     
         self.logger.info('Redeeming SBTC..')
       
         js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
                          "method" : "eth_getTransactionByHash", 
-                         "params" : ["%s" % txn_hash]})
-        hash_bytes = self.w3_rsk.w3.toBytes(hexstr = txn_hash)
-        txn_hash = self.rsk_concise.redeem(hash_bytes, js, 
+                         "params" : "%s" % HexBytes(txn_hash_redeem).hex()})
+        txn_hash = self.rsk_concise.redeem(txn_hash_redeem, js, 
                                            transact = self.rsk_tx)
         self.w3_rsk.wait_to_be_mined(txn_hash) 
 
@@ -94,12 +93,29 @@ class App:
 
     def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
         txn_hash = self.fwd_deposit(sbtc_amount) 
+
+        # Wait for at least 2 blocks  
+        bn = self.w3_rsk.w3.eth.blockNumber
+        self.logger.info('Waiting for enough confirmations')       
+        while (self.w3_rsk.w3.eth.blockNumber - bn) <=2:
+            time.sleep(2)
+
         self.fwd_issue_ebtc(txn_hash)
 
     def run_rev_txn(self, ebtc_amount):
         #self.rev_approve_ebtc()
+
         #txn_hash = self.rev_redeem_ebtc(ebtc_amount) 
-        txn_hash = '0x9d11a21d0a2ca8a644a62a70c67ae740adc193e31c1e23079b307e0836c93ab4'
+
+        # Wait for at least 2 blocks  
+        '''
+        bn = self.w3_eth.w3.eth.blockNumber
+        self.logger.info('Waiting for enough confirmations')       
+        while (self.w3_eth.w3.eth.blockNumber - bn) <=2:
+            time.sleep(2)
+        '''
+
+        txn_hash = HexBytes('0x30ed16405e1c15c037504458d235122e5153db36bb5c3923f726720436ba8a3a')
         self.rev_redeem_sbtc(txn_hash)
 
 def main():
