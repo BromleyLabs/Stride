@@ -16,9 +16,6 @@
 
         <h1>Deposit SBTC</h1>
 
-        <label for="name" class="col-lg-2 control-label">User address</label>
-        <input id="user" type="text" value="0x36E7CDF091cbFA3a86611017e813432D98dFD969">
-
         <label for="name" class="col-lg-2 control-label">SBTC</label>
         <input id="sbtc" type="any" value="0.00000001">
 
@@ -52,7 +49,7 @@
 
     <script>
          
-        //web3 = new Web3(new Web3.providers.HttpProvider("http://stride.ddns.net:4444"));
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:4444"));
         console.log(web3.currentProvider);  
         web3.eth.getAccounts(function(err, accounts) {console.info(accounts);});
         var contract = web3.eth.contract([{"constant":false,"inputs":[{"name":"url","type":"string"}],"name":"setStrideServerURL","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"addr","type":"address"}],"name":"setEthContractAddr","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"query_id","type":"bytes32"},{"name":"result","type":"string"}],"name":"__callback","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"myid","type":"bytes32"},{"name":"result","type":"string"},{"name":"proof","type":"bytes"}],"name":"__callback","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"kill","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"m_eth_addr","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"txn_hash","type":"bytes32"},{"name":"json_request","type":"string"}],"name":"redeem","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"m_stride_server_url","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"eth_dest_addr","type":"address"}],"name":"depositSBTC","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"n","type":"uint256"}],"name":"setMinConfirmations","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"m_min_confirmations","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":false,"name":"userRSK","type":"address"},{"indexed":false,"name":"sbtc_amount","type":"uint256"}],"name":"UserDeposited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"dest_addr","type":"address"},{"indexed":false,"name":"sbtc_amount","type":"uint256"}],"name":"UserRedeemed","type":"event"}]);
@@ -60,10 +57,6 @@
         var stride_rsk = contract.at('0xc589638371dB9C7D00003a8E638A6b4910097996'); 
         console.log(stride_rsk);
         $("#button").click(function() {
-            //var account = document.getElementById("user").value; 
-            //web3.eth.defaultAccount = account;
-            //web3.personal.unlockAccount(web3.eth.defaultAccount, "puneet");
-            //console.info("account unlocked");
             var sbtc = parseFloat(document.getElementById("sbtc").value); 
             sbtc_wei = web3.toWei(sbtc, "ether"); 
             var dest = document.getElementById("dest").value;
