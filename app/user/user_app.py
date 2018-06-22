@@ -103,19 +103,15 @@ class App:
         self.fwd_issue_ebtc(txn_hash)
 
     def run_rev_txn(self, ebtc_amount):
-        #self.rev_approve_ebtc()
+        self.rev_approve_ebtc()
 
-        #txn_hash = self.rev_redeem_ebtc(ebtc_amount) 
+        txn_hash = self.rev_redeem_ebtc(ebtc_amount) 
 
         # Wait for at least 2 blocks  
-        '''
         bn = self.w3_eth.w3.eth.blockNumber
         self.logger.info('Waiting for enough confirmations')       
         while (self.w3_eth.w3.eth.blockNumber - bn) <=2:
             time.sleep(2)
-        '''
-
-        txn_hash = HexBytes('0x30ed16405e1c15c037504458d235122e5153db36bb5c3923f726720436ba8a3a')
         self.rev_redeem_sbtc(txn_hash)
 
 def main():

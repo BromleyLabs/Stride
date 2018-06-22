@@ -27,8 +27,8 @@ rsk.token_addr = '' # NA. SBTC is currency, not token
 rsk.contract_owner = '0x36E7CDF091cbFA3a86611017e813432D98dFD969'
 rsk.rpc_addr = 'http://localhost:4444'
 #rsk.rpc_addr = 'http://stride.ddns.net:4444'
-rsk.user = '0x36E7CDF091cbFA3a86611017e813432D98dFD969' # Checksummed
-#rsk.user = '0x36e7cdf091cbfa3a86611017e813432d98dfd969' # lower case
+rsk.user = '0x9d465C631F1D8E47B6113Ab204a9410183fcCE05'
+#rsk.user = '0x9d465c631f1d8e47b6113ab204a9410183fcce05' # Lower case
 rsk.dest_addr = '0x8518266aCAe14073776De8371153A3389265d955'
 rsk.contract_owner = '0x36E7CDF091cbFA3a86611017e813432D98dFD969' 
 
