@@ -7,7 +7,9 @@ https://api.infura.io/v1/jsonrpc/ropsten/methods?token=rWjoIVMZaYJbccSEmLQn
 
 {"get":["web3_clientVersion","net_version","net_listening","net_peerCount","eth_protocolVersion","eth_syncing","eth_mining","eth_hashrate","eth_gasPrice","eth_accounts","eth_blockNumber","eth_getBalance","eth_getStorageAt","eth_getTransactionCount","eth_getBlockTransactionCountByHash","eth_getBlockTransactionCountByNumber","eth_getUncleCountByBlockHash","eth_getUncleCountByBlockNumber","eth_getCode","eth_call","eth_estimateGas","eth_getBlockByHash","eth_getBlockByNumber","eth_getTransactionByHash","eth_getTransactionByBlockHashAndIndex","eth_getTransactionByBlockNumberAndIndex","eth_getTransactionReceipt","eth_getUncleByBlockHashAndIndex","eth_getUncleByBlockNumberAndIndex","eth_getCompilers","eth_getLogs","eth_getWork"],"post":["eth_sendRawTransaction","eth_call","eth_estimateGas","eth_submitWork","eth_submitHashrate"]}
 
+==============
 Seems RSK addresses are all lower case, it does not accept checksumed addresses.
+==============
 
 
 curl --include \
@@ -20,7 +22,9 @@ curl --include \
 '{"jsonrpc":"2.0","id":23,"result":{"blockHash":"0x884387db730b4943aa6f9f58965210238b67b10fce7bbfd216689297f3768e0e","blockNumber":"0x33053b","from":"0x81b7e08f65bdf5648606c89998a9cc8164397647","gas":"0x5208","gasPrice":"0x3b9aca00","hash":"0x3a232165aa0ae7ae7ea94a3162ee6a8a829390f167ea83e150af204df8624239","input":"0x","nonce":"0x8aa0f0","to":"0x7647e1203e314a99f31e833083f41036ee0da90d","transactionIndex":"0x8c","value":"0xde0b6b3a7640000","v":"0x1b","r":"0x98bca6d5cf67cd7cc4271b74545ab559924492ba9399cf377b1008aa95ff38cf","s":"0x2a8efbda3d777804a2db26614e5e363933e6852adb949098e532de0bc0409e44"}}
 
 
-# Event data structure
+==============
+Event data structure
+
 AttributeDict({'args': AttributeDict({'sbtc_amount': 1000000000000, 'userRSK': '0x36E7CDF091cbFA3a86611017e813432D98dFD969'}), 'blockHash': HexBytes('0x78cb05484d8f7be641c891f371f89653e1fcc5cc21a829665af7362bc66e5ad2'), 'address': '0x02e806DB0B1DF24089223AA2e560819bAD50feb0', 'transactionHash': HexBytes('0x6dd452d0bef3e5efc2c8067bf17239e9a5d8ecdc758cb57102ca0a34938a927c'), 'blockNumber': 563063, 'event': 'UserDeposited', 'logIndex': 0, 'transactionIndex': 0})
 
 ==============
@@ -35,7 +39,46 @@ To unlock accounts on Web3.js (for javascript), you have to define defaultAccoun
 web3.eth.defaultAccount = web3.eth.accounts[0]
 personal.unlockAccount(web3.eth.defaultAccount)
 ===============
-
 To access Parity via javascript in a webpage using, say, "http://locahost:8545/index.html"  you have to start Parity with --jsonrpc-cors=all option. 
 
 For RSK set "cors" field testnet.conf to "*"
+=================
+To get private key from UTC file:
+
+>>> from web3.auto import w3
+>>> with open("~/.ethereum/rinkeby/keystore/UTC--2018-06-
+    10T05-43-22.134895238Z--9e63c0d223d9232a4f3076947ad7cff353cc1a28") 
+     as keyfile:
+        encrypted_key = keyfile.read()
+        w3.eth.enable_unaudited_features()
+        private_key = w3.eth.account.decrypt(encrypted_key, password) 
+
+Before calling this function call: w3.eth.enable_unaudited_features()
+=================
+To sign a transaction
+
+transaction = {
+        'to': '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
+        'value': 1000000000,
+        'gas': 2000000,
+        'gasPrice': 234567897654321,
+        'nonce': 0,
+        'chainId': 1
+    }
+key = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318'
+signed = w3.eth.account.signTransaction(transaction, key)
+
+w3.eth.sendRawTransaction(signed.rawTransaction)
+
+Get nonce with:
+w3.eth.getTransactionCount(account_address)
+================
+For html files run python http server as
+python3.5 -m http.server
+=====
+Accounts on RSK:
+To be able to sign transactions we need the private key. Since RSK stores keys in levelDB, we cannot generate private key.  Instead I have taken the UTC* file from Parity and generated Private Key from it. Import this private key in RSK with
+web3.personal.importRawKey(private_key_hex_without_0x, password) 
+Using the same account address on both Ethereum and RSK is fine, the formats are same.
+
+
