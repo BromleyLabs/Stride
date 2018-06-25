@@ -30,26 +30,31 @@ function get_account_key(input_id, keystore_id) {
 
 function deposit_sbtc(key_contents, password, sbtc_amount, dest_addr, 
                       contract_rsk, contract_eth, web3_eth, web3_rsk) {
-    sbtc_wei = web3.toWei(sbtc_amount, "ether"); 
+    sbtc_wei = web3.toHex(web3.toWei(sbtc_amount, "ether")); 
     [pvt_key, from_addr] = get_pvt_key(key_contents, password);
     console.info("from addr:" + from_addr);
     web3_rsk.eth.getTransactionCount(from_addr, function(err, nonce) {
-        var data = contract_rsk.depositSBTC(dest_addr).getData();  
+        console.info(nonce);
+        var data = contract_rsk.depositSBTC.getData(dest_addr);  
         var tx = new ethereumjs.Tx({
             nonce: nonce,           
-            gasPrice: web3.toHex(web3.toWei('20', 'gwei')), 
-            gasLimit: 1000000, 
+            gasPrice: web3.toHex(web3.toWei('0', 'gwei')), 
+            gasLimit: 4000000, 
             to: contract_rsk.address,
             value: sbtc_wei,
             data: data,
         });
 
-        console.log("Singing ..");
+        console.info("Signing ..");
         tx.sign(pvt_key);
         var raw = '0x' + tx.serialize().toString('hex');
-        console.log("Calling send raw txn..");
+        console.info(raw);
+        console.info("Calling send raw txn..");
         web3_rsk.eth.sendRawTransaction(raw, function(err, txn_hash) {
-            console.log(txn_hash); 
+            if (err) 
+                console.error("Error sending Txn");
+            else
+                console.log(txn_hash); 
         });
     });
 }
