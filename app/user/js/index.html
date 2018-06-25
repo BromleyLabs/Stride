@@ -12,6 +12,8 @@
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="./utils.js"></script>
     <script src="./contract.js"></script>
+    <script src="./eth_browser_js/ethereumjs-tx-1.3.3.min.js"></script>
+    <script src="./eth_browser_js/keythereum.js"></script> 
 
 </head>
 <body>
@@ -20,7 +22,10 @@
         <h1>Deposit SBTC</h1>
 
         <label for="account" class="col-lg-2 control-label">From Account</label>
-        <input type="file" id="key_path"/>
+        <input id="key_path" type="file"/>
+
+        <label for="password" class="col-lg-2 control-label">Password</label>
+        <input id="pwd" type="any" value = "puneet"/>
 
         <label for="name" class="col-lg-2 control-label">SBTC</label>
         <input id="sbtc" type="any" value="0.00000001">
@@ -38,6 +43,27 @@
 
 <script>
     get_account_key("key_path", "key_contents");
+    var web3_eth = init_web3("http://stride.ddns.net:8545"); 
+    var web3_rsk = init_web3("http://stride.ddns.net:4444"); 
+    contract_rsk = init_rsk_contract(web3_rsk);
+    contract_eth = init_eth_contract(web3_eth);
+   
+    $("#button").click(function() {
+        key_contents = document.getElementById("key_contents").value;
+        console.log(key_contents);
+        password = document.getElementById("pwd").value;
+        dest_addr = document.getElementById("dest").value;
+        sbtc_amount = document.getElementById("sbtc").value;
+        if (key_contents == null | password == null) {
+            console.log("Fill in all fields properly");
+            return;
+        }    
+
+        deposit_sbtc(key_contents, password, sbtc_amount, dest_addr, 
+                     contract_rsk, contract_eth, web3_eth, web3_rsk);
+    
+    });
+
 </script>
 </body>
 </html>
