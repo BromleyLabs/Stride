@@ -51,22 +51,23 @@ function deposit_sbtc(key_contents, password, sbtc_amount, dest_addr,
         console.info(raw);
         console.info("Calling send raw txn..");
         web3_rsk.eth.sendRawTransaction(raw, function(err, txn_hash) {
-            if (err) 
+            if (err) { 
                 console.error("Error sending Txn");
-            else
+            }
+            else {
                 console.log(txn_hash); 
+                wait_to_be_mined(web3_rsk, txn_hash);
+            }
         });
     });
 }
 
-/* 
-function wait_to_be_mined(txhash) {
+function wait_to_be_mined(w3, txn_hash) {
     console.info("Getting txn receipt");
-    web3.eth.getTransactionReceipt(txhash, function (err, result) {
+    w3.eth.getTransactionReceipt(txn_hash, function (err, result) {
         if (!err && !result) {
             // Try again with a bit of delay
-            setTimeout(function () {wait_to_be_mined (txhash) }, 2000);
-            console.info("Trying to get receipt again");
+            setTimeout(function () {wait_to_be_mined (w3, txn_hash) }, 2000);
         } else {
             if (err)
                 console.error("ERROR in Transaction"); 
@@ -76,6 +77,5 @@ function wait_to_be_mined(txhash) {
     });
 }
 
-*/
 
 
