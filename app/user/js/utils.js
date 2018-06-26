@@ -10,8 +10,9 @@ function get_pvt_key(key_contents, password) {
     return [keythereum.recover(password, keyobj), from_addr];
 }
 
-// input_id is element id for file input
-// keystore_id is an hidden div where key contents are stored
+/* input_id is element id for file input
+   keystore_id is a hidden div where key contents are stored
+*/
 function get_account_key(input_id, keystore_id) {
     var input = document.getElementById(input_id);
     var keystore = document.getElementById(keystore_id);
@@ -22,14 +23,13 @@ function get_account_key(input_id, keystore_id) {
             reader.readAsText(key_file);
             reader.addEventListener('load', function (e) {
                 keystore.value = e.target.result;
-                //console.log(keystore.value);
             });
         }
     });
 }
 
 function deposit_sbtc(key_contents, password, sbtc_amount, dest_addr, 
-                      contract_rsk, contract_eth, web3_eth, web3_rsk) {
+                      contract_rsk, web3_rsk) {
     sbtc_wei = web3.toHex(web3.toWei(sbtc_amount, "ether")); 
     [pvt_key, from_addr] = get_pvt_key(key_contents, password);
     console.info("from addr:" + from_addr);
@@ -67,7 +67,7 @@ function wait_to_be_mined(w3, txn_hash) {
     w3.eth.getTransactionReceipt(txn_hash, function (err, result) {
         if (!err && !result) {
             // Try again with a bit of delay
-            setTimeout(function () {wait_to_be_mined (w3, txn_hash) }, 2000);
+            setTimeout(function () {wait_to_be_mined(w3, txn_hash) }, 3000);
         } else {
             if (err)
                 console.error("ERROR in Transaction"); 
@@ -77,5 +77,12 @@ function wait_to_be_mined(w3, txn_hash) {
     });
 }
 
+/* TODO. 
+function wait_for_enough_confirmations(w3, start_block, n) {
+    console.info("Waiting for enough confirmations");
+    curr_block = w3.eth.blockNumber; 
+    if ((curr_block - start_block) <= n) {
 
-
+    }
+}
+*/
