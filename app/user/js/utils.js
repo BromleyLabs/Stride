@@ -71,16 +71,19 @@ function wait_to_be_mined(w3, txn_hash) {
                 console.error("ERROR in Transaction"); 
             else
                 console.info("Transaction mined"); 
+                start_block = w3.eth.blockNumber;
+                wait_for_confirmations(w3, start_block, 2);   
         }
     });
 }
 
-/* TODO. 
-function wait_for_enough_confirmations(w3, start_block, n) {
+function wait_for_confirmations(w3, start_block, n) {
     console.info("Waiting for enough confirmations");
     curr_block = w3.eth.blockNumber; 
     if ((curr_block - start_block) <= n) {
-
+        setTimeout(function () {wait_for_confirmations(w3, start_block, n) }, 3000);
+    }
+    else {
+        console.info(n + " confirmations done");
     }
 }
-*/
