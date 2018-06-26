@@ -50,16 +50,14 @@ function deposit_sbtc(key_contents, password, sbtc_amount, dest_addr,
         var raw = '0x' + tx.serialize().toString('hex');
         console.info(raw);
         console.info("Calling send raw txn..");
-        web3_rsk.eth.sendRawTransaction(raw, function(err, txn_hash) {
-            if (err) { 
-                console.error("Error sending Txn");
-            }
-            else {
-                console.log(txn_hash); 
-                wait_to_be_mined(web3_rsk, txn_hash);
-            }
-        });
-    });
+        txn_hash = web3_rsk.eth.sendRawTransaction(raw);
+        if (txn_hash == null) { 
+            console.error("Error sending Txn");
+            return;
+        }
+        console.log(txn_hash); 
+        wait_to_be_mined(web3_rsk, txn_hash);
+   });
 }
 
 function wait_to_be_mined(w3, txn_hash) {
