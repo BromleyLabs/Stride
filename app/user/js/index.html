@@ -39,34 +39,30 @@
 
     </div>
 
-    <div style="display:none;" id="key_contents"></div>   
+    <div style="display:none;" id="rsk_key"></div>   
 
 <script>
-    get_account_key("key_path", "key_contents");
+    get_account_key("key_path", "rsk_key");
     var web3_eth = init_web3("http://stride.ddns.net:8545"); 
     var web3_rsk = init_web3("http://stride.ddns.net:4444"); 
     contract_rsk = init_rsk_contract(web3_rsk);
     contract_eth = init_eth_contract(web3_eth);
    
     $("#button").click(function() {
-        key_contents = document.getElementById("key_contents").value;
-        console.log(key_contents);
+        rsk_key = document.getElementById("rsk_key").value;
+        console.log(rsk_key);
         password = document.getElementById("pwd").value;
         dest_addr = document.getElementById("dest").value;
         sbtc_amount = document.getElementById("sbtc").value;
-        if (key_contents == null | password == null) {
+        if (rsk_key == null | password == null) {
             console.log("Fill in all fields properly");
             return;
         }    
 
-        deposit_sbtc(key_contents, password, sbtc_amount, dest_addr, 
-                     contract_rsk, web3_rsk);
+        /*deposit_sbtc(rsk_key, password, sbtc_amount, dest_addr, 
+                     contract_rsk, web3_rsk); */
+        issue_ebtc(web3_eth, contract_eth, rsk_key, password, "0x449b31958c526988cad57565c01227a5fb38656ae626a97eaf43746573958df8", sbtc_amount); 
 
-        /* TODO: Wait for n confirmations */
- 
-        /* TODO: Transfer EBTC to user on Ethereum chain */
-
-    
     });
 
 </script>
