@@ -21,16 +21,19 @@
 
         <h1>Deposit SBTC</h1>
 
-        <label for="account" class="col-lg-2 control-label">From Account</label>
-        <input id="key_path" type="file"/>
+        <label for="rsk_key_file" class="col-lg-2 control-label">RSK Key</label>
+        <input id="rsk_key_file" type="file"/>
+
+        <label for="eth_key_file" class="col-lg-2 control-label">ETH Key</label>
+        <input id="eth_key_file" type="file"/>
 
         <label for="password" class="col-lg-2 control-label">Password</label>
-        <input id="pwd" type="any" value = "puneet"/>
+        <input id="password" type="any" value="puneet"/>
 
-        <label for="name" class="col-lg-2 control-label">SBTC</label>
+        <label for="sbtc" class="col-lg-2 control-label">SBTC</label>
         <input id="sbtc" type="any" value="0.00000001">
 
-        <label for="name" class="col-lg-2 control-label">Destination address</label>
+        <label for="dest" class="col-lg-2 control-label">Destination address</label>
         <input id="dest" type="any" value="0x9d465C631F1D8E47B6113Ab204a9410183fcCE05">
 
         <label for="status" class="col-lg-2 control-label">Status:</label>
@@ -40,28 +43,31 @@
     </div>
 
     <div style="display:none;" id="rsk_key"></div>   
+    <div style="display:none;" id="eth_key"></div>   
 
 <script>
-    get_account_key("key_path", "rsk_key");
-    var web3_eth = init_web3("http://stride.ddns.net:8545"); 
-    var web3_rsk = init_web3("http://stride.ddns.net:4444"); 
-    contract_rsk = init_rsk_contract(web3_rsk);
-    contract_eth = init_eth_contract(web3_eth);
+    get_account_key("rsk_key_file", "rsk_key");
+    get_account_key("eth_key_file", "eth_key");
+    var Web3_eth = init_web3("http://stride.ddns.net:8545"); 
+    var Web3_rsk = init_web3("http://stride.ddns.net:4444"); 
+    Contract_rsk = init_rsk_contract(web3_rsk);
+    Contract_eth = init_eth_contract(web3_eth);
    
     $("#button").click(function() {
         rsk_key = document.getElementById("rsk_key").value;
-        console.log(rsk_key);
-        password = document.getElementById("pwd").value;
+        eth_key = document.getElementById("eth_key").value;
+        password = document.getElementById("password").value;
         dest_addr = document.getElementById("dest").value;
         sbtc_amount = document.getElementById("sbtc").value;
-        if (rsk_key == null | password == null) {
+        console.log(password);
+        if (rsk_key == null | eth_key == null | password == ""
+            | dest_addr == null | sbtc_amount <= 0) {
             console.log("Fill in all fields properly");
             return;
         }    
 
-        /*deposit_sbtc(rsk_key, password, sbtc_amount, dest_addr, 
+        deposit_sbtc(rsk_key, password, sbtc_amount, dest_addr, 
                      contract_rsk, web3_rsk); */
-        issue_ebtc(web3_eth, contract_eth, rsk_key, password, "0x449b31958c526988cad57565c01227a5fb38656ae626a97eaf43746573958df8", sbtc_amount); 
 
     });
 

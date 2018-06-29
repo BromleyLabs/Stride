@@ -1,3 +1,6 @@
+This version - is P1V3 where the entire forward and reverse txn has been tested using both python script as well web browser user interface.  
+Aborting this version as Oraclize is being used along with our server which realy does not keep it trustless
+===============
 Infura:
 Infura node: https://ropsten.infura.io/rWjoIVMZaYJbccSEmLQn
 

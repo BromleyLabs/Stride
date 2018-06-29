@@ -32,19 +32,18 @@ function get_account_key(input_id, keystore_id) {
    w3:  web3 instance of RSK node (e.g. http://server:4444) 
    rsk_key: User keystore file for RSK account
  */ 
-function deposit_sbtc(rsk_key, password, sbtc_amount, dest_addr, 
-                      contract_rsk, w3) {
-    sbtc_wei = w3.toHex(w3.toWei(sbtc_amount, "ether")); 
+function sbtc2ebtc(rsk_key, eth_key, password, sbtc_amount, dest_addr) {
+    sbtc_wei = Web3_rsk.toHex(Web3_rsk.toWei(sbtc_amount, "ether")); 
     [pvt_key, from_addr] = get_pvt_key(rsk_key, password);
     console.info("from addr:" + from_addr);
-    w3.eth.getTransactionCount(from_addr, function(err, nonce) {
+    Web3_rsk.eth.getTransactionCount(from_addr, function(err, nonce) {
         console.info(nonce);
-        var data = contract_rsk.depositSBTC.getData(dest_addr);  
+        var data = Contract_rsk.depositSBTC.getData(dest_addr);  
         var tx = new ethereumjs.Tx({
             nonce: nonce,           
-            gasPrice: w3.toHex(w3.toWei('0', 'gwei')), 
+            gasPrice: Web3_rsk.toHex(Web3_rsk.toWei('0', 'gwei')), 
             gasLimit: 4000000, 
-            to: contract_rsk.address,
+            to: Contract_rsk.address,
             value: sbtc_wei,
             data: data,
         });
@@ -54,13 +53,13 @@ function deposit_sbtc(rsk_key, password, sbtc_amount, dest_addr,
         var raw = '0x' + tx.serialize().toString('hex');
         console.info(raw);
         console.info("Calling send raw txn..");
-        txn_hash = w3.eth.sendRawTransaction(raw); /* TODO: See above */
+        txn_hash = Web3_rsk.eth.sendRawTransaction(raw); /* TODO: See above */
         if (txn_hash == null) { 
             console.error("Error sending Txn");
             return;
         }
         console.log(txn_hash); 
-        wait_to_be_mined(w3, txn_hash);
+        wait_for_user_deposited(); 
    });
 }
 
@@ -76,7 +75,7 @@ function wait_to_be_mined(w3, txn_hash) {
             else
                 console.info("Transaction mined"); 
                 start_block = w3.eth.blockNumber;
-                wait_for_confirmations(w3, start_block, 2);   
+                wait_for_confirmations(w3, start_block, 2, txn_hash);   
         }
     });
 }
@@ -84,27 +83,37 @@ function wait_to_be_mined(w3, txn_hash) {
 /* Wait for some n confirmations and then call Ethereum contract method to 
  * to issue EBTC 
  */
-function wait_for_confirmations(w3, start_block, n) {
+function wait_for_confirmations(w3, start_block, n, txn_hash) {
     console.info("Waiting for enough confirmations");
     curr_block = w3.eth.blockNumber; 
     if ((curr_block - start_block) <= n) {
-        setTimeout(function () {wait_for_confirmations(w3, start_block, n) }, 
-                   3000);
+        setTimeout(function () {wait_for_confirmations(w3, start_block, n, 
+                                                      txn_hash) }, 3000);
     }
     else {
         console.info(n + " confirmations done");
         issue_ebtc(web3_eth, contract_eth, rsk_key, password,  txn_hash, 
-                    sbtc_amount); 
+                   sbtc_amount); 
     }
 }
 
-function wait_for_event(contract) {
-    contract.EBTCIssued(function(err, result) {
+function wait_for_ebtc_issued() {
+    Contract_eth.EBTCIssued(function(err, result) {
         if (err) 
             console.error('Error in receiving event');
         else
             console.info('EBTCIssued event received');
             console.info('Transaction completed');
+    });
+}
+
+function wait_for_user_deposited() {
+    Contract_rsk.UserDeposited(function(err, result) {
+        if (err) 
+            console.error('Error in receiving event');
+        else
+            console.info('UserDeposited event received');
+            
     });
 }
 
@@ -146,4 +155,8 @@ function issue_ebtc(w3, contract_eth, eth_key, password,  deposit_txn_hash,
         wait_for_event(contract_eth); 
    });
   
+}
+
+function just_checking() {
+   console.info(contract_eth.address);
 }
