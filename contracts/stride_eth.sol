@@ -83,10 +83,6 @@ contract StrideEthContract is mortal {
         m_ether_lock_interval = nblocks;
     }
 
-    /** Fallback function to transfer Ethers to this contract */
-       function () public payable {
-    }
-
     /**  Send collateral Eth to contract.  Called by Custodian */
     function fwd_deposit(uint txn_id, address user_eth, 
                          bytes32 custodian_pwd_hash, uint timeout_interval, 
