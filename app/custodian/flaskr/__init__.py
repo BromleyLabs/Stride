@@ -12,7 +12,6 @@ from hexbytes import HexBytes
 
 def process_request(js, chain):
     if js['method'] == 'init_sbtc2ebtc':
-        txn_hash_bytes = bytes.fromhex(txn_hash[2:]) # params='0x23AB...' 
         pwd_str, pwd_hash = chain.generate_random_string(4)
         js['pwd_str'] = pwd_str
         js['pwd_hash'] = pwd_hash.hex()
@@ -38,7 +37,7 @@ def create_app():
     def default_response():
         return default_page
 
-    @app.route('/stride/', methods=['POST', 'GET'])
+    @app.route('/stride/', methods=['POST'])
     def init_sbtc2ebtc():
         try:
            logger.info(request.headers)
@@ -46,7 +45,7 @@ def create_app():
                logger.info('Request does not have JSON')
                return "Request does not have JSON", 400
 
-           js, msg = process_request(request.json, chain)  
+           js, msg = process_request(request.json, eth)  
            js['date'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
            event_q.send(json.dumps(js)) 
            return msg
