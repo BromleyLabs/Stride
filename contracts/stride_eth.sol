@@ -117,7 +117,8 @@ contract StrideEthContract is mortal {
     /** 
        Function called by user to redeem EBTC. It is assumed that user has
        approved EBTC transfer by this contract. The function burns the EBTCs
-       by sending to a NULL address. 
+       by sending to a NULL address. The corresponding collateral Ether is 
+       transferred back to Custodian.  
        @param ebtc_amount uint in Wei
        @param rsk_dest_addr address on RSK to which equivalent SBTCs need to be
         transferred.  
@@ -125,9 +126,12 @@ contract StrideEthContract is mortal {
     function rev_redeem(address rsk_dest_addr, uint ebtc_amount) public {
        require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, 0x0, 
                                                          ebtc_amount));
+       uint collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).
+                               div(m_eth_ebtc_ratio_denominator); 
+       m_custodian_eth.transfer(collateral_eth);
+
        emit EBTCSurrendered(msg.sender, ebtc_amount);
    }
-    
 }
 
 

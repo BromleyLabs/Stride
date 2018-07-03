@@ -42,6 +42,7 @@ contract EthProof {
     /**
       Submit Ethereum block headers.  Assumption here is headers are valid. No
       validy check in this function.
+      TODO: Who is authorized to submit?
      */
     function submit_block(bytes32 block_hash, bytes rlp_header) public {
         BlockHeader memory header = parse_block_header(rlp_header);
@@ -49,9 +50,9 @@ contract EthProof {
     }
 
     /** Verify if a transaction is indeed present in a block */
-    function check_txn_proof(bytes32 block_hash, bytes rlp_stack, uint[] indexes, 
-                          bytes txn_prefix, bytes rlp_txn) 
-                          public returns (bool) {
+    function check_txn_proof(bytes32 block_hash, bytes rlp_stack, 
+                             uint[] indexes, bytes txn_prefix, bytes rlp_txn) 
+                             public returns (bool) {
         bytes32 txn_root = m_blocks[block_hash].txn_root;
         if (check_proof(txn_root, rlp_stack, indexes, txn_prefix, rlp_txn)) 
             return true;
@@ -75,7 +76,8 @@ contract EthProof {
                 curr_node_list = stack[i].toList();
                 RLP.RLPItem memory value = 
                     curr_node_list[curr_node_list.length - 1];
-                if (keccak256(abi.encodePacked(value_prefix, rlp_value)) == keccak256(value.toBytes())) 
+                if (keccak256(abi.encodePacked(value_prefix, rlp_value)) == 
+                              keccak256(value.toBytes())) 
                     return true;
                 else 
                     return false;
