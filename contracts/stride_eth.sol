@@ -5,7 +5,7 @@
   is automatic and is based on user providing proof of transaction that burns 
   EBTC on Ethereum contract. 
 */ 
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "erc20.sol";
 import "ebtc_token.sol";
@@ -108,7 +108,7 @@ contract StrideEthContract is mortal {
     }
 
     /** Issue EBTCs to user. Called by user */
-    function fwd_issue(uint txn_id, string pwd_str) public { 
+    function fwd_issue(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == txn.user_eth, "Only user can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, 

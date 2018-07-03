@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 contract mortal {
     address public m_owner = msg.sender;  /* Whoever deploys this contract */ 

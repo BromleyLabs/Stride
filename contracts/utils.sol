@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 library StrideUtils {
     /* Utility function to extract bytes from a byte array given an offset 

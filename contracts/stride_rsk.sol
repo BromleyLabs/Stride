@@ -5,7 +5,7 @@
   EBTC on Ethereum contract. 
 */ 
 
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "safe_math.sol";
 import "mortal.sol";
@@ -44,7 +44,7 @@ contract StrideRSKContract is mortal {
     uint public m_sbtc_lock_interval = 100;  /* In blocks. */
 
     event FwdUserDeposited(uint txn_id);
-    event FwdTransferredToCustodian(uint txn_id, string pwd_str); 
+    event FwdTransferredToCustodian(uint txn_id, bytes pwd_str); 
     event FwdUserChallengeAccepted(uint txn_id);
 
     event RevCustodianDeposited(uint txn_id, bytes32 ack_hash); 
@@ -85,7 +85,7 @@ contract StrideRSKContract is mortal {
      * Send password string to user and transfer SBTC to custodian. Called by
      * custodian
      */
-    function fwd_transfer(uint txn_id, string pwd_str) public { 
+    function fwd_transfer(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, 
