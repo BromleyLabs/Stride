@@ -17,7 +17,7 @@ contract EthProof {
     }
 
     /** Helper function */
-    function parse_block_header(bytes rlp_header) constant internal 
+    function parse_block_header(bytes rlp_header) pure internal 
                                returns (BlockHeader) {
         BlockHeader memory header;
         RLP.Iterator memory it = rlp_header.toRLPItem().iterator();
@@ -43,25 +43,25 @@ contract EthProof {
       Submit Ethereum block headers.  Assumption here is headers are valid. No
       validy check in this function.
      */
-    function submitBlock(bytes32 block_hash, bytes rlp_header) public {
+    function submit_block(bytes32 block_hash, bytes rlp_header) public {
         BlockHeader memory header = parse_block_header(rlp_header);
         m_blocks[block_hash] = header;
     }
 
     /** Verify if a transaction is indeed present in a block */
-    function checkTxProof(bytes32 block_hash, bytes rlp_stack, uint[] indexes, 
+    function check_txn_proof(bytes32 block_hash, bytes rlp_stack, uint[] indexes, 
                           bytes txn_prefix, bytes rlp_txn) 
-                          constant public returns (bool) {
+                          public returns (bool) {
         bytes32 txn_root = m_blocks[block_hash].txn_root;
-        if (checkProof(txn_root, rlp_stack, indexes, txn_prefix, rlp_txn)) 
+        if (check_proof(txn_root, rlp_stack, indexes, txn_prefix, rlp_txn)) 
             return true;
         else 
             return false;
     }
 
-    function checkProof(bytes32 root_hash, bytes rlp_stack, uint[] indexes, 
+    function check_proof(bytes32 root_hash, bytes rlp_stack, uint[] indexes, 
                         bytes value_prefix, bytes rlp_value) 
-                        constant public returns (bool) {
+                        public returns (bool) {
         RLP.RLPItem[] memory stack = rlp_stack.toRLPItem().toList();
         bytes32 node_hash = root_hash; 
         bytes memory curr_node; 

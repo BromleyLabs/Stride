@@ -164,7 +164,7 @@ library RLP {
  /// @dev Return the RLP encoded bytes.
  /// @param self The RLPItem.
  /// @return The bytes.
- function toBytes(RLPItem memory self) internal constant returns (bytes memory bts) {
+ function toBytes(RLPItem memory self) internal returns (bytes memory bts) {
      uint len = self._unsafe_length;
      if (len == 0)
          return;
@@ -176,7 +176,7 @@ library RLP {
  /// RLPItem is a list.
  /// @param self The RLPItem.
  /// @return The decoded string.
- function toData(RLPItem memory self) internal constant returns (bytes memory bts) {
+ function toData(RLPItem memory self) internal returns (bytes memory bts) {
      require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      bts = new bytes(len);
@@ -203,7 +203,7 @@ library RLP {
  /// RLPItem is a list.
  /// @param self The RLPItem.
  /// @return The decoded string.
- function toAscii(RLPItem memory self) internal constant returns (string memory str) {
+ function toAscii(RLPItem memory self) internal returns (string memory str) {
      require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      bytes memory bts = new bytes(len);
@@ -358,7 +358,7 @@ library RLP {
  }
 
  // Assumes that enough memory has been allocated to store in target.
- function _copyToBytes(uint btsPtr, bytes memory tgt, uint btsLen) private constant {
+ function _copyToBytes(uint btsPtr, bytes memory tgt, uint btsLen) private {
      // Exploiting the fact that 'tgt' was the last thing to be allocated,
      // we can write entire words, and just overwrite any excess.
      assembly {
