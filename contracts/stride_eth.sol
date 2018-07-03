@@ -1,128 +1,141 @@
+/** 
+  @title Contract on Ethereum for Stride transactions. The "forward" 
+  transaction, for SBTC->EBTC is implemented using a cross-chain atomic swap 
+  where a Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however,
+  is automatic and is based on user providing proof of transaction that burns 
+  EBTC on Ethereum contract. 
+*/ 
 pragma solidity ^0.4.23;
-
-/* Contract on Ethereum for Stride transactions */ 
 
 import "erc20.sol";
 import "ebtc_token.sol";
 import "mortal.sol";
-import "utils.sol";
-import "github.com/oraclize/ethereum-api/oraclizeAPI_0.5.sol";
 
-
-contract StrideEthContract is mortal,usingOraclize {
+contract StrideEthContract is mortal {
     using SafeMath for uint;
-    using StrideUtils for bytes;
 
-    struct FwdTxn {
-        bytes32 txn_hash;
-        bool issued;
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, ISSUED, CHALLENGED}
+    enum RevTxnStates {UNINITIALIZED, DEPOSITED, HASH_ADDED, 
+                      SECURITY_RECOVERED, CHALLENGED}
+
+    struct ForwardTxn { /* SBTC -> EBTC Transaction */
+        uint txn_id; 
+        address user_eth; 
+        bytes32 custodian_pwd_hash; /* Custodian password hash */
+        uint timeout_interval; /* Blocks */
+        uint creation_block; /* When this transaction was created */ 
+        uint ebtc_amount; 
+        uint collateral_eth; /* Calculated */
+        FwdTxnStates state;
+    }  
+
+    struct ReverseTxn { /* EBTC -> SBTC transaction */
+        uint txn_id;
+        address user_eth;
+        address dst_rsk; /* Destination address on RSK */ 
+        uint ebtc_amount;  
+        uint creation_block;
+        bytes32 ack_hash;
+        uint security_eth; 
+        RevTxnStates state; 
     }
 
-    address public m_rsk_addr; /* Set by method below */
-    address public m_ebtc_token_addr; /* Set by method below */
-    mapping(bytes32 => FwdTxn) m_fwd_txns;
-    mapping(bytes32 => bytes32) m_query_map;
-    uint public m_min_confirmations = 30;
-    string public m_stride_server_url = "binary(https://stride.ddns.net/stride/rsk/testnet).slice(0, 136)";
+    mapping (uint => ForwardTxn) public m_fwd_txns; 
+    mapping (uint => ReverseTxn) public m_rev_txns; 
 
-    event EBTCIssued(address dest_addr, uint ebtc_amount);
-    event EBTCSurrendered(address user_eth, uint ebtc_amount);
+    address public m_custodian_eth;
+    address public m_ebtc_token_addr; /* Set by method below */ 
+    uint public m_eth_ebtc_ratio_numerator = 15;  /* For collateral */
+    uint public m_eth_ebtc_ratio_denominator = 1;
+    uint public m_ether_lock_interval = 100; /* In blocks */
+    uint public m_locked_eth = 0;
 
-    function setStrideServerURL(string url) public {
-        require(msg.sender == m_owner, "Only owner can set this");
-        m_stride_server_url = url;
+    event FwdCustodianDeposited(uint txn_id);
+    event FwdEBTCIssued(uint txn_id);
+    event FwdCustodianChallengeAccepted(uint txn_id);
+
+    event RevCollateralDeposited(uint txn_id);
+    event RevRedemptionInitiated(uint txn_id, address dest_rsk_addr);
+    event RevHashAdded(uint txn_id, bytes32 ack_hash);
+    event RevCustodianSecurityRecovered(uint txn_id, string ack_str);
+    event RevUserChallengeAccepted(uint txn_id);
+    event RevCustodianChallengeAccepted(uint txn_id);
+   
+    /* Contract initialization functions called by Owner */
+    function set_custodian(address addr) public {
+        require(msg.sender == m_owner);
+        m_custodian_eth = addr;
     }
 
-    function setRSKContractAddr(address addr) public {
+    function set_ebtc_token_address(address addr) public {
         require(msg.sender == m_owner, "Only owner can set this");
-        m_rsk_addr = addr;
+        m_ebtc_token_addr = addr; 
     } 
 
-    function setMinConfirmations(uint n) public {
+    function set_eth_ebtc_ratio(uint numerator, uint denominator) public {
         require(msg.sender == m_owner, "Only owner can set this");
-        m_min_confirmations = n;
+        m_eth_ebtc_ratio_numerator = numerator;
+        m_eth_ebtc_ratio_denominator = denominator;
     }
 
-    function setEBTCTokenAddress(address addr) public {
+    function set_lock_interval(uint nblocks) public {
         require(msg.sender == m_owner, "Only owner can set this");
-        m_ebtc_token_addr = addr;
+        m_ether_lock_interval = nblocks;
     }
 
-    function () public payable {
-
+    /** Fallback function to transfer Ethers to this contract */
+       function () public payable {
     }
 
-    /* Called by Oraclize. 
-       result bytes format: current_block(32), txn_block(32), 
-                            contract_address(20), dest_addr(20), sbtc(32)
-    */  
-    function __callback(bytes32 query_id, string result) public {
-        require(msg.sender == oraclize_cbAddress());
+    /**  Send collateral Eth to contract.  Called by Custodian */
+    function fwd_deposit(uint txn_id, address user_eth, 
+                         bytes32 custodian_pwd_hash, uint timeout_interval, 
+                         uint ebtc_amount) public payable {
+        require(txn_id > 0);
+        require(m_fwd_txns[txn_id].txn_id != txn_id, 
+                "Transaction already exists");
+        require(msg.sender == m_custodian_eth);
+        uint collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).
+                               div(m_eth_ebtc_ratio_denominator); 
+        require(msg.value == collateral_eth); 
 
-        bytes32 txn_hash = m_query_map[query_id];
-        FwdTxn storage txn = m_fwd_txns[txn_hash];
-
-        require(!txn.issued, "Transaction already issued");
-
-        bytes memory b = bytes(result);
-        require(b.length > 0, "Transaction incorrect");
-
-        uint offset = 0; 
-        uint current_block = uint(b.getBytes32(offset));
-
-        offset += 32;  
-        uint txn_block = uint(b.getBytes32(offset));
-
-        require(current_block.sub(txn_block) > m_min_confirmations, 
-                "Confirmations not enough");
-
-        offset += 32;  
-        address to_addr = address(b.getBytes20(offset));
-        require(to_addr == m_rsk_addr, "To address does not match");
-
-        offset += 20;  
-        address dest_addr = address(b.getBytes20(offset));
-
-        offset += 20;  
-        uint ebtc_amount = uint(b.getBytes32(offset)); /* == sbtc */
-   
-        require(EBTCToken(m_ebtc_token_addr).issueFreshTokens(dest_addr,
-                                                              ebtc_amount));
-        txn.issued = true;
-
-        delete m_query_map[query_id];
-       
-        emit EBTCIssued(dest_addr, ebtc_amount);
+        m_fwd_txns[txn_id] = ForwardTxn(txn_id, user_eth, custodian_pwd_hash, 
+                                        timeout_interval, block.number, 
+                                        ebtc_amount, collateral_eth, 
+                                        FwdTxnStates.DEPOSITED);
+        
+        emit FwdCustodianDeposited(txn_id); 
     }
 
-    /* Called by user. 
-       jsonHashRequest: '{"jsonrpc" : "2.0", "id" : 0, "method" : 
-       "eth_getTransactionByHash", "params" : ["0x<transaction hash>"]}'
-    */
-    function issueEBTC(bytes32 txn_hash, string json_request) public { 
-        /* There should be enough balance for all Oraclize queries */
-        require(address(this).balance > oraclize_getPrice("URL"),
-                "Oraclize query not send"); 
+    /** Issue EBTCs to user. Called by user */
+    function fwd_issue(uint txn_id, string pwd_str) public { 
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
+        require(msg.sender == txn.user_eth, "Only user can call this"); 
+        require(txn.state == FwdTxnStates.DEPOSITED, 
+                "Transaction not in DEPOSITED state");
+        require(block.number <= (txn.creation_block + txn.timeout_interval));
+        require(txn.custodian_pwd_hash == keccak256(pwd_str), 
+                "Hash does not match");
 
-        /* Obtain transaction info from RSK */ 
-        bytes32 query_id;
-        query_id = oraclize_query(
-                      "URL", 
-                      m_stride_server_url, 
-                      json_request); 
+        require(EBTCToken(m_ebtc_token_addr).issueFreshTokens(txn.user_eth, 
+                                                              txn.ebtc_amount));
+        txn.state = FwdTxnStates.ISSUED;
 
-       if(m_fwd_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 
-           m_fwd_txns[txn_hash] = FwdTxn(txn_hash, false); 
-
-       m_query_map[query_id] = txn_hash;
+        emit FwdEBTCIssued(txn_id);
     }
 
-   function redeem(address rsk_dest_addr, uint ebtc_amount) public {
-       /* Assumed user has approved EBTC transfer by this contract */ 
-       require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, 0x0, 
-                                                         ebtc_amount));
-       emit EBTCSurrendered(msg.sender, ebtc_amount);
-   }
+    /* Called by custodian when no user action */
+    function fwd_no_user_action_challenge(uint txn_id) public {
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
+        require(msg.sender == m_custodian_eth, "Only custodian can call this"); 
+        require(txn.state == FwdTxnStates.DEPOSITED, 
+                "Transaction not in DEPOSITED state"); 
+        require(block.number > (txn.creation_block + txn.timeout_interval));
 
+        m_custodian_eth.transfer(txn.collateral_eth);
+        txn.state = FwdTxnStates.CHALLENGED;
+
+        emit FwdCustodianChallengeAccepted(txn_id);
+    }
 }
 

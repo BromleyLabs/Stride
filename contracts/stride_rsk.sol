@@ -1,115 +1,115 @@
-pragma solidity ^0.4.23;
+/** @title Contract on RSK for Stride transactions. The "forward" transaction,
+  for SBTC->EBTC is implemented using a cross-chain atomic swap where a
+  Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
+  automatic and is based on user providing proof of transaction that burns 
+  EBTC on Ethereum contract. 
+*/ 
 
-/* Contract on RSK for Stride transactions */ 
+pragma solidity ^0.4.23;
 
 import "safe_math.sol";
 import "mortal.sol";
-import "utils.sol";
-import "github.com/oraclize/rsk-api/oraclizeAPI_0.4.sol";
 
-contract StrideRSKContract is mortal, usingOraclize {
+contract StrideRSKContract is mortal {
     using SafeMath for uint;
-    using StrideUtils for bytes;
 
-    struct RevTxn {
-        bytes32 txn_hash;
-        bool redeemed;
-    }
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}
+    enum RevTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}  
 
-    address public m_eth_addr; /* Set by method below */
-    mapping(bytes32 => RevTxn) m_rev_txns;
-    mapping(bytes32 => bytes32) m_query_map;
-    uint public m_min_confirmations = 30;
-    string public m_stride_server_url = "binary(https://stride.ddns.net/stride/ethereum/ropsten).slice(0, 136)";
-
-    event UserDeposited(address userRSK, uint sbtc_amount);
-    event UserRedeemed(address dest_addr, uint sbtc_amount);
-
-    function () public payable {
-
-    }
-
-    function setStrideServerURL(string url) public {
-        require(msg.sender == m_owner, "Only owner can set this");
-        m_stride_server_url = url;
-    }
-
-    function setEthContractAddr(address addr) public {
-        require(msg.sender == m_owner, "Only owner can set this");
-        m_eth_addr = addr;
+    struct ForwardTxn {  /* SBTC -> EBTC Transaction */
+        uint txn_id; 
+        address user_rsk; /* RSK address */
+        bytes32 custodian_pwd_hash; /* Custodian password hash */
+        uint timeout_interval; /* Blocks. Arbitary */ 
+        uint creation_block; 
+        uint sbtc_amount;
+        FwdTxnStates state;
     } 
 
-    function setMinConfirmations(uint n) public {
+    struct ReverseTxn {  /* EBTC -> SBTC Transaction */
+        uint txn_id; 
+        address user_rsk;
+        address dest_rsk_addr;
+        bytes32 ack_hash; 
+        uint sbtc_amount;
+        uint creation_block;
+        RevTxnStates state;
+    }
+
+    mapping (uint => ForwardTxn) public m_fwd_txns;  /* TODO: Efficient and cheaper storage and purge strategy of transactions */ 
+    mapping (uint => ReverseTxn) public m_rev_txns; 
+
+    address public m_custodian_rsk;   
+    uint public m_locked_sbtc = 0;
+    uint public m_sbtc_lock_interval = 100;  /* In blocks. */
+
+    event FwdUserDeposited(uint txn_id);
+    event FwdTransferredToCustodian(uint txn_id, string pwd_str); 
+    event FwdUserChallengeAccepted(uint txn_id);
+
+    event RevCustodianDeposited(uint txn_id, bytes32 ack_hash); 
+    event RevTransferredToUser(uint txn_id);
+    event RevCustodianChallengeAccepted(uint txn_id);
+
+    /** Contract initialization functions called by Owner */
+    function set_custodian(address addr) public {
+        require(msg.sender == m_owner);
+        m_custodian_rsk = addr;
+    }
+
+    function set_lock_interval(uint nblocks) public {
         require(msg.sender == m_owner, "Only owner can set this");
-        m_min_confirmations = n;
+        m_sbtc_lock_interval = nblocks;
     }
 
-    function depositSBTC(address eth_dest_addr) public payable {
-        emit UserDeposited(msg.sender, msg.value); 
+    /** 
+     * Initate SBTC->EBTC transfer by first depositing SBTC to this 
+     *  contract. Called by user.  
+     *  Note: Custodian may want to check if this amount is as per 
+     *  agreed while hash off-chain transaction 
+     */
+    function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
+                         uint timeout_interval) public payable {
+        require(txn_id > 0);
+        require(m_fwd_txns[txn_id].txn_id != txn_id, 
+                "Transaction already exists");
+        require(msg.value > 0, "SBTC cannot be 0"); 
+
+        m_fwd_txns[txn_id] = ForwardTxn(txn_id, msg.sender, custodian_pwd_hash,
+                                        timeout_interval, block.number, 
+                                        msg.value, FwdTxnStates.DEPOSITED);
+        emit FwdUserDeposited(txn_id);
     }
 
-    /* Called by Oraclize. 
-       result bytes format: current_block(32), txn_block(32), 
-                            contract_address(20), dest_addr(20), sbtc(32)
-    */  
-    function __callback(bytes32 query_id, string result) public {
-        require(msg.sender == oraclize_cbAddress());
+    /** 
+     * Send password string to user and transfer SBTC to custodian. Called by
+     * custodian
+     */
+    function fwd_transfer(uint txn_id, string pwd_str) public { 
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
+        require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
+        require(txn.state == FwdTxnStates.DEPOSITED, 
+                "Transaction not in DEPOSITED state");
+        require(block.number <= (txn.creation_block + txn.timeout_interval));
+        require(txn.custodian_pwd_hash == keccak256(pwd_str), 
+                "Hash does not match");
+  
+        m_custodian_rsk.transfer(txn.sbtc_amount);
+        txn.state = FwdTxnStates.TRANSFERRED;
 
-        bytes32 txn_hash = m_query_map[query_id];
-        RevTxn storage txn = m_rev_txns[txn_hash];
-
-        require(!txn.redeemed, "Transaction already issued");
-
-        bytes memory b = bytes(result);
-        require(b.length > 0, "Transaction incorrect");
-
-        uint offset = 0; 
-        uint current_block = uint(b.getBytes32(offset));
-
-        offset += 32;  
-        uint txn_block = uint(b.getBytes32(offset));
-
-        require(current_block - txn_block > m_min_confirmations, 
-                "Confirmations not enough");
-
-        offset += 32;  
-        address to_addr = address(b.getBytes20(offset));
-        require(to_addr == m_eth_addr, "To address does not match");
-
-        offset += 20;  
-        address dest_addr = address(b.getBytes20(offset));
-
-        offset += 20;  
-        uint sbtc_amount = uint(b.getBytes32(offset)); /* == ebtc */
-   
-        dest_addr.transfer(sbtc_amount);
-       
-        txn.redeemed = true;
-
-        delete m_query_map[query_id];
-    
-        emit UserRedeemed(dest_addr, sbtc_amount);
+        emit FwdTransferredToCustodian(txn_id, pwd_str);
     }
 
-    /* Called by user. 
-       jsonHashRequest: '{"jsonrpc" : "2.0", "id" : 0, "method" : 
-       "eth_getTransactionByHash", "params" : ["0x<transaction hash>"]}'
-    */
-    function redeem(bytes32 txn_hash, string json_request) public { 
-        /* There should be enough balance for all Oraclize queries */
-        require(address(this).balance > oraclize_getPrice("URL"), 
-                                  "Oraclize query not send"); 
+    /** Called by user. Refund in case no action by Custodian */ 
+    function fwd_no_custodian_action_challenge(uint txn_id) public {
+        ForwardTxn storage txn = m_fwd_txns[txn_id]; 
+        require(msg.sender == txn.user_rsk, "Only user can call this"); 
+        require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
+        require(block.number > (txn.creation_block + txn.timeout_interval));
 
-        /* Obtain transaction info from RSK */ 
-        bytes32 query_id;
-        query_id = oraclize_query(
-                      "URL", 
-                      m_stride_server_url,
-                      json_request); 
+        txn.user_rsk.transfer(txn.sbtc_amount);
+        txn.state = FwdTxnStates.CHALLENGED;
 
-       if(m_rev_txns[txn_hash].txn_hash != txn_hash) /* May already exist */ 
-           m_rev_txns[txn_hash] = RevTxn(txn_hash, false); 
-
-       m_query_map[query_id] = txn_hash;
+        emit FwdUserChallengeAccepted(txn_id);
     }
-} 
+}
