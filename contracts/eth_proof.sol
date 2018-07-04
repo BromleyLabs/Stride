@@ -60,6 +60,18 @@ contract EthProof {
             return false;
     }
 
+    function check_receipt_proof(bytes32 block_hash, bytes rlp_stack, 
+                                 uint[] indexes, bytes receipt_prefix, 
+                                 bytes rlp_receipt) public returns (bool) {
+        bytes32 receipt_root = m_blocks[block_hash].receipt_root;
+        if (check_proof(receipt_root, rlp_stack, indexes, receipt_prefix, 
+                        rlp_receipt)) 
+            return true;
+        else 
+            return false;
+   
+    }
+
     function check_proof(bytes32 root_hash, bytes rlp_stack, uint[] indexes, 
                         bytes value_prefix, bytes rlp_value) 
                         public returns (bool) {
