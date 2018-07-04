@@ -63,7 +63,9 @@ contract StrideEthContract is mortal {
         m_ether_lock_interval = nblocks;
     }
 
-    /**  Send collateral Eth to contract.  Called by Custodian */
+    /** Send collateral Eth to contract.  Called by Custodian 
+        TODO: Doposit slightly higher amount.  See notes for rev_redeem().  
+     */
     function fwd_deposit(uint txn_id, address user_eth, 
                          bytes32 custodian_pwd_hash, uint timeout_interval, 
                          uint ebtc_amount) public payable {
@@ -118,10 +120,15 @@ contract StrideEthContract is mortal {
        Function called by user to redeem EBTC. It is assumed that user has
        approved EBTC transfer by this contract. The function burns the EBTCs
        by sending to a NULL address. The corresponding collateral Ether is 
-       transferred back to Custodian.  
+       transferred back to Custodian.  The event generated here will be part
+       of logs in the transaction receipt. RSK contract will verify transaction
+       receipt of this transaction, read rsk_dest_addr and ebtc_amount values
+       from logs and transfer equivalent SBTC.
        @param ebtc_amount uint in Wei
        @param rsk_dest_addr address on RSK to which equivalent SBTCs need to be
         transferred.  
+       TODO: Initial deposited Ether amount should be slightly more to take
+       care of any rounding off issues while transferring back to custodian. 
      */
     function rev_redeem(address rsk_dest_addr, uint ebtc_amount) public {
        require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, 0x0, 
@@ -130,7 +137,7 @@ contract StrideEthContract is mortal {
                                div(m_eth_ebtc_ratio_denominator); 
        m_custodian_eth.transfer(collateral_eth);
 
-       emit EBTCSurrendered(msg.sender, ebtc_amount);
+       emit EBTCSurrendered(rsk_dest_addr, ebtc_amount);
    }
 }
 
