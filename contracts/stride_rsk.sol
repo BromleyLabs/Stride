@@ -1,7 +1,7 @@
 /** @title Contract on RSK for Stride transactions. The "forward" transaction,
   for SBTC->EBTC is implemented using a cross-chain atomic swap where a
   Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
-  automatic and is based on user providing proof of transaction that burns 
+  automatic and is based on user providing proof of transaction of depositing
   EBTC on Ethereum contract. 
 */ 
 
@@ -14,7 +14,6 @@ contract StrideRSKContract is mortal {
     using SafeMath for uint;
 
     enum FwdTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}
-    enum RevTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}  
 
     struct ForwardTxn {  /* SBTC -> EBTC Transaction */
         uint txn_id; 
@@ -26,18 +25,9 @@ contract StrideRSKContract is mortal {
         FwdTxnStates state;
     } 
 
-    struct ReverseTxn {  /* EBTC -> SBTC Transaction */
-        uint txn_id; 
-        address user_rsk;
-        address dest_rsk_addr;
-        bytes32 ack_hash; 
-        uint sbtc_amount;
-        uint creation_block;
-        RevTxnStates state;
-    }
-
-    mapping (uint => ForwardTxn) public m_fwd_txns;  /* TODO: Efficient and cheaper storage and purge strategy of transactions */ 
-    mapping (uint => ReverseTxn) public m_rev_txns; 
+    mapping (uint => ForwardTxn) public m_fwd_txns;  
+    /* Eth txn hash => true   */
+    mapping (uint => bool) public m_sbtc_issued;
 
     address public m_custodian_rsk;   
     uint public m_locked_sbtc = 0;
@@ -46,10 +36,6 @@ contract StrideRSKContract is mortal {
     event FwdUserDeposited(uint txn_id);
     event FwdTransferredToCustodian(uint txn_id, bytes pwd_str); 
     event FwdUserChallengeAccepted(uint txn_id);
-
-    event RevCustodianDeposited(uint txn_id, bytes32 ack_hash); 
-    event RevTransferredToUser(uint txn_id);
-    event RevCustodianChallengeAccepted(uint txn_id);
 
     /** Contract initialization functions called by Owner */
     function set_custodian(address addr) public {
@@ -63,10 +49,10 @@ contract StrideRSKContract is mortal {
     }
 
     /** 
-     * Initate SBTC->EBTC transfer by first depositing SBTC to this 
-     *  contract. Called by user.  
-     *  Note: Custodian may want to check if this amount is as per 
-     *  agreed while hash off-chain transaction 
+       Initate SBTC->EBTC transfer by first depositing SBTC to this 
+       contract. Called by user.  
+       Note: Custodian may want to check if this amount is as per 
+       agreed while hash off-chain transaction 
      */
     function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
                          uint timeout_interval) public payable {
@@ -82,8 +68,8 @@ contract StrideRSKContract is mortal {
     }
 
     /** 
-     * Send password string to user and transfer SBTC to custodian. Called by
-     * custodian
+      Send password string to user and transfer SBTC to custodian. Called by
+      custodian
      */
     function fwd_transfer(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -112,4 +98,6 @@ contract StrideRSKContract is mortal {
 
         emit FwdUserChallengeAccepted(txn_id);
     }
+
+    
 }
