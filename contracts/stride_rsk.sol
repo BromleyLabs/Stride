@@ -137,7 +137,7 @@ contract StrideRSKContract is mortal {
         address dest_addr = RLP.toAddress(event_params[0]);
         uint sbtc_amount = RLP.toUint(event_params[1]);
         
-        dest_addr.transfer(sbtc_amount); 
+        dest_addr.transfer(sbtc_amount); /* Transfer SBTC */
     
         m_sbtc_issued[keccak256(rlp_txn_receipt)] = true; 
     } 
