@@ -9,11 +9,12 @@ pragma solidity ^0.4.24;
 
 import "safe_math.sol";
 import "mortal.sol";
+import "eth_proof.sol";
 
 contract StrideRSKContract is mortal {
     using SafeMath for uint;
 
-    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, TRANSFERRED, CHALLENGED}
+    enum FwdTxnStates {UNINITIALIZED, DEPOSITED, ACKNOWLEDGED, CHALLENGED}
 
     struct ForwardTxn {  /* SBTC -> EBTC Transaction */
         uint txn_id; 
@@ -30,17 +31,22 @@ contract StrideRSKContract is mortal {
     mapping (uint => bool) public m_sbtc_issued;
 
     address public m_custodian_rsk;   
+    address public m_eth_proof_addr; /* Address of EthProof contract */
     uint public m_locked_sbtc = 0;
     uint public m_sbtc_lock_interval = 100;  /* In blocks. */
 
     event FwdUserDeposited(uint txn_id);
-    event FwdTransferredToCustodian(uint txn_id, bytes pwd_str); 
-    event FwdUserChallengeAccepted(uint txn_id);
+    event FwdAckByCustodian(uint txn_id, bytes pwd_str); 
 
     /** Contract initialization functions called by Owner */
     function set_custodian(address addr) public {
         require(msg.sender == m_owner);
         m_custodian_rsk = addr;
+    }
+
+    function set_eth_proof_addr(address addr) public {
+        require(msg.sender == m_owner);
+        m_eth_proof_addr = addr;
     }
 
     function set_lock_interval(uint nblocks) public {
@@ -68,10 +74,9 @@ contract StrideRSKContract is mortal {
     }
 
     /** 
-      Send password string to user and transfer SBTC to custodian. Called by
-      custodian
+      Send password string to user as acknowledgment. Called by custodian
      */
-    function fwd_transfer(uint txn_id, bytes pwd_str) public { 
+    function fwd_ack(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
         require(msg.sender == m_custodian_rsk, "Only custodian can call this"); 
         require(txn.state == FwdTxnStates.DEPOSITED, 
@@ -80,10 +85,9 @@ contract StrideRSKContract is mortal {
         require(txn.custodian_pwd_hash == keccak256(pwd_str), 
                 "Hash does not match");
   
-        m_custodian_rsk.transfer(txn.sbtc_amount);
-        txn.state = FwdTxnStates.TRANSFERRED;
+        txn.state = FwdTxnStates.ACKNOWLEDGED;
 
-        emit FwdTransferredToCustodian(txn_id, pwd_str);
+        emit FwdAckByCustodian(txn_id, pwd_str);
     }
 
     /** Called by user. Refund in case no action by Custodian */ 
@@ -95,9 +99,26 @@ contract StrideRSKContract is mortal {
 
         txn.user_rsk.transfer(txn.sbtc_amount);
         txn.state = FwdTxnStates.CHALLENGED;
-
-        emit FwdUserChallengeAccepted(txn_id);
     }
 
+    /** Called by the user, this function redeems SBTC to the destination 
+        address specified on Ethereum side.  The user provides proof of 
+        Ethereum transaction receipt which is verified in this function. Logs
+        of transaction receipt contain user RSK destination address and 
+        SBTC amount (refer to Ethereum contract). 
+        @param rlp_txn_receipt bytes The full transaction receipt structure 
+        @param block_hash bytes32 Hash of the block in which Ethereum 
+         transaction exists
+        @param path bytes path of the Merkle proof to reach root node
+        @param rlp_parent_nodes bytes Merkle proof in the form of trie
+     */
+    function rev_redeem(bytes rlp_txn_receipt, bytes32 block_hash, bytes path,
+                        bytes rlp_parent_nodes) public {
+        require(EthProof(m_eth_proof_addr).check_receipt_proof(rlp_txn_receipt,
+                block_hash, path, rlp_parent_nodes));         
+
+        /* TODO: Check status flag in receipt */ 
+        /* TODO: Read dest address and ebtc */
     
+    } 
 }
