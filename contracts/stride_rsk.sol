@@ -122,14 +122,17 @@ contract StrideRSKContract is mortal {
      */
     function rev_redeem(bytes rlp_txn_receipt, bytes32 block_hash, bytes path,
                         bytes rlp_parent_nodes) public {
-        require(m_sbtc_issued[keccak256(rlp_txn_receipt)] != true, 
+
+        bytes32 rlp_txn_receipt_hash =  keccak256(rlp_txn_receipt);
+        require(m_sbtc_issued[rlp_txn_receipt_hash] != true, 
                 "SBTC already issued for this transaction");
+
         require(EthProof(m_eth_proof_addr).check_receipt_proof(rlp_txn_receipt,
                 block_hash, path, rlp_parent_nodes), "Incorrect proof");         
         RLP.RLPItem memory item = RLP.toRLPItem(rlp_txn_receipt);
         RLP.RLPItem[] memory fields = RLP.toList(item);
-        uint status = uint(RLP.toUint(fields[0])); /* First field is status */
-        require(status > 0);
+        uint status = (RLP.toUint(fields[0])); 
+        require(status > 0); /* The txn should have been succesful */
      
         RLP.RLPItem[] memory logs = RLP.toList(fields[3]); /* Logs */
         RLP.RLPItem[] memory log_fields = RLP.toList(logs[0]); /* Only 1 log */
@@ -141,6 +144,6 @@ contract StrideRSKContract is mortal {
         
         dest_addr.transfer(sbtc_amount); /* Transfer SBTC */
     
-        m_sbtc_issued[keccak256(rlp_txn_receipt)] = true; 
+        m_sbtc_issued[rlp_txn_receipt_hash] = true; 
     } 
 }
