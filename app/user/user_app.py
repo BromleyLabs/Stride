@@ -34,7 +34,7 @@ class App:
         self.logger.info('Initiate %s, txn_id: %d' % (method, txn_id)) 
         js = {'jsonrpc' : '2.0', 'id' : txn_id, 
                   'method' : method, 'params' :  params}
-        r = requests.post(config.custodian_url, json = js)
+        r = requests.post(config.custodian_portal, json = js)
         self.logger.info(r.text)
         if r.status_code != requests.codes.ok:
             self.logger.error('Incorrect response code from custodian = %d' % 
@@ -57,7 +57,8 @@ class App:
         # customer will end up depositing Ether
         self.logger.info('Waiting for custodian to transfer Ether')
         event_filter = self.eth_contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
-        event = self.w3_eth.wait_for_event(event_filter, txn_id)
+        event = self.w3_eth.wait_for_event(event_filter, 
+                                           args = {'txn_id' : txn_id})
         if event is None:  # Timeout 
             self.logger.info('Custodian did not respond. Quiting.')
             return 0 
@@ -69,12 +70,14 @@ class App:
                             self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
                             timeout_interval, transact = self.rsk_tx) 
 
-        self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
-   
+        status = self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
+        if status == 'error':
+            return 1 
         # Wait for custodian to send password string on RSK 
         self.logger.info('Waiting for custodian to send password string')
         event_filter = self.rsk_contract.events.FwdAckByCustodian.createFilter(fromBlock = 'latest')
-        event = self.w3_rsk.wait_for_event(event_filter, txn_id)
+        event = self.w3_rsk.wait_for_event(event_filter, 
+                                           args = {'txn_id' : txn_id})
         if event is None:  # Timeout
             self.logger.info('Customer did not send password string. Challenging..')
             tx_hash = self.rsk_concise.fwd_no_custodian_action_challenge(
@@ -87,7 +90,7 @@ class App:
 
         # Issuing EBTC on Eth contract   
         self.logger.info('Issuing EBTC on Eth contract ..')
-        tx_hash = self.eth_concise.fwd_issue(txn_id, pwd_str, 
+        tx_hash = self.eth_concise.fwd_issue_ebtc(txn_id, pwd_str, 
                                              transact = self.eth_tx) 
         self.w3_eth.wait_to_be_mined(tx_hash)
 

@@ -71,8 +71,8 @@ class W3Utils:
         self.w3 = Web3(Web3.HTTPProvider(chain_config.rpc_addr))
         self.chain = chain_config
         if chain_config == config.rsk: 
-            self.unlock_accounts([self.chain.contract_owner, self.chain.user],
-                                  "puneet")
+            self.unlock_accounts([self.chain.contract_owner, self.chain.user,
+                                  self.chain.custodian], "puneet")
         # Parity accounts assumed to be unlocked while running the node
      
     def init_contract(self, contract_name, contract_addr):
@@ -130,9 +130,8 @@ class W3Utils:
             if status == 'error' or status == 'mined': 
                 break
             time.sleep(5) 
-    
         self.logger.debug(txn_receipt)
-        return txn_receipt
+        return status
 
     def wait_to_be_mined_batch(self, txn_hashes):
         # txn_hashes: list of txn_hash
@@ -160,29 +159,34 @@ class W3Utils:
                                             'gasPrice': gas_price}) 
         return self.wait_to_be_mined(txn_hash)
 
-    def wait_for_event(self, event_filter, txn_hash = None, timeout = 200):
+    def event_match(self, event, txn_hash = None, args = None):
+        if txn_hash:
+            if event['transactionHash'] != txn_hash:
+                return False
+        if args is not None:
+            for k in args:
+                if k not in event['args']:
+                    return False
+                if args[k] != event['args'][k]:
+                    return False
+        return True
+
+    # expected_args is dict of key value pairs of the event
+    def wait_for_event(self, event_filter, txn_hash = None, args = None, 
+                       timeout = 200):
         # timout in nblocks
-        received = False
         start = self.w3.eth.blockNumber
         while self.w3.eth.blockNumber < start + timeout: 
-            events = event_filter.get_new_entries()
-            for event in events:
-                if txn_hash is not None:
-                    if event['transactionHash'] != HexBytes(txn_hash):
-                        continue
-                self.logger.info('Event received')
-                self.logger.debug(event)
-                received = True 
-                break
-            if received:
-                break
             time.sleep(3)
-        
-        if received:
-            return event
-        else:
-            self.logger.error('Event wait timeout!') 
-            return None
+            events = event_filter.get_new_entries()
+            if len(events) == 0:
+                continue 
+            for event in events:
+                if self.event_match(event, txn_hash, args):
+                    return event                    
+ 
+        self.logger.error('Event wait timeout!') 
+        return None
 
     def unlock_accounts(self, accounts_list, pwd):
         for a in accounts_list:

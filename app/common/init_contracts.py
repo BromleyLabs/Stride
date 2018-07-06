@@ -51,15 +51,15 @@ class App:
         return self.rsk_concise.set_min_confirmations(n, 
                                                       transact = self.rsk_tx) 
 
-    def set_custodian_on_rsk(self, addr):
+    def set_custodian_on_rsk(self):
         self.logger.info('Set custodian on RSK') 
-        return self.rsk_concise.set_custodian(config.rsk.custodidan, 
+        return self.rsk_concise.set_custodian(config.rsk.custodian, 
                                               transact = self.rsk_tx) 
 
-    def set_custodian_on_eth(self, addr):
+    def set_custodian_on_eth(self):
         self.logger.info('Set custodian on Eth') 
-        return self.eth_concise.set_custodian(config.eth.custodidan, 
-                                              transact = self.rsk_tx) 
+        return self.eth_concise.set_custodian(config.eth.custodian, 
+                                              transact = self.eth_tx) 
 
 if __name__== '__main__':
     if len(sys.argv) != 1:
@@ -68,34 +68,34 @@ if __name__== '__main__':
 
     app = App('/tmp/stride.log')
     
+    '''
     # Rsk
     rsk_txns = [] 
     txn = app.set_eth_contract_addr_on_rsk()
     rsk_txns.append(txn)
 
+    txn =  app.set_eth_proof_contract_addr_on_rsk()
+    rsk_txns.append(txn)
+
     txn = app.set_min_confirmations_on_rsk(1) # Only for testing
     rsk_txns.append(txn)
 
-    app.transfer_sbtc_from_user_to_rsk(int(0.001 * 10**18))
+    txn = app.set_custodian_on_rsk()
+    rsk_txns.append(txn)
 
     app.rsk.wait_to_be_mined_batch(rsk_txns)
 
+    '''
     #Eth
     eth_txns = []
 
-    txn = app.set_rsk_contract_addr_on_eth() # Only for testing
-    eth_txns.append(txn)
-
-    txn = app.set_min_confirmations_on_eth(1)
-    app.eth.wait_to_be_mined(txn)
-    eth_txns.append(txn)
-
-    app.transfer_ether_from_user_to_eth(int(0.02 * 10**18))
-
-    txn = app.set_ebtc_token_addr_on_eth()
+    txn = app.set_custodian_on_eth()
     eth_txns.append(txn)
 
     txn = app.set_issuer_on_ebtc_token()
+    eth_txns.append(txn)
+
+    txn = app.set_ebtc_token_addr_on_eth()
     eth_txns.append(txn)
 
     app.eth.wait_to_be_mined_batch(eth_txns)

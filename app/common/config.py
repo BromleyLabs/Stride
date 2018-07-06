@@ -1,6 +1,6 @@
 import os
 
-custodian_portal = 'http://localhost:5000/stride'
+custodian_portal = 'http://localhost:5000/stride/'
 eth_ebtc_ratio = 15.0
 eth_proof_contract_addr = '0x752AB1beD959Ec45e788AC003D70eCD2f60C99da'
 
