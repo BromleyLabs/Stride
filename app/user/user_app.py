@@ -2,7 +2,6 @@
 import sys
 import uuid
 import json
-from pymongo import MongoClient
 import datetime
 from common import config
 from common.utils import *
@@ -24,95 +23,77 @@ class App:
                        'gasPrice' : config.eth.gas_price, 'value' : 0}
         self.rsk_tx = {'from' : config.rsk.user, 'gas' : config.rsk.gas, 
                        'gasPrice' : config.rsk.gas_price, 'value' : 0} 
+    
+    def create_txn_id(self):
+        u =  uuid.uuid4()  # Random 128 bits 
+        return u.int
+ 
+    def offchain_handshake(self, method, params):
+        # With custodian
+        txn_id = self.create_txn_id() 
+        self.logger.info('Initiate %s, txn_id: %d' % (method, txn_id)) 
+        js = {'jsonrpc' : '2.0', 'id' : txn_id, 
+                  'method' : method, 'params' :  params}
+        r = requests.post(config.custodian_url, json = js)
+        self.logger.info(r.text)
+        if r.status_code != requests.codes.ok:
+            self.logger.error('Incorrect response code from custodian = %d' % 
+                               r.status_code)
+            return None, None
+        return txn_id, json.loads(r.text)
+ 
+    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
+        params = {'sbtc_amount' : sbtc_amount, 'user' : config.eth.user}
+        txn_id, js = self.offchain_handshake('init_sbtc2ebtc', params)
+        if txn_id is None: 
+            return 1
+ 
+        pwd_hash = js['result'] # of form '0x45667...'
+        timeout_interval = 100 # Right timeout TBD
+        self.logger.info('password hash from custodian = %s' % pwd_hash)
 
-    def fwd_deposit(self, sbtc_amount):
-        # Deposit SBTC to RSK contract
+        # Wait for Custodian to transfer Ether To Ether contract
+        # TODO: User can spam custodian here by sending many requests for which
+        # customer will end up depositing Ether
+        self.logger.info('Waiting for custodian to transfer Ether')
+        event_filter = self.eth_contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
+        event = self.w3_eth.wait_for_event(event_filter, txn_id)
+        if event is None:  # Timeout 
+            self.logger.info('Custodian did not respond. Quiting.')
+            return 0 
+
+        # Transfer SBTC to RSK contract
         self.logger.info('Depositing SBTC to RSK contract ..')
         self.rsk_tx['value'] = sbtc_amount
-        txn_hash = self.rsk_concise.depositSBTC(config.eth.user, 
-                                               transact = self.rsk_tx) 
-        self.rsk_tx['value'] = 0
-        self.logger.info('txn hash: %s' % HexBytes(txn_hash).hex())
-        self.w3_rsk.wait_to_be_mined(txn_hash)
+        tx_hash = self.rsk_concise.fwd_deposit(txn_id, 
+                            self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
+                            timeout_interval, transact = self.rsk_tx) 
 
-        self.logger.info('Wait for success log of above txn')
-        event_filter = self.rsk_contract.events.UserDeposited.\
-                           createFilter(fromBlock = 'latest')
-        event = self.w3_rsk.wait_for_event(event_filter, txn_hash)
-        return txn_hash
+        self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
    
-    def fwd_issue_ebtc(self, txn_hash_deposit):
-        # Request EBTC issue on Eth
-        js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
-                         "method" : "eth_getTransactionByHash", 
-                         "params" : "%s" % HexBytes(txn_hash_deposit).hex()})
-        self.logger.info('Requesting issue of EBTC ..') 
-        txn_hash = self.eth_concise.issueEBTC(txn_hash_deposit, js, 
-                                              transact = self.eth_tx )
-        self.w3_eth.wait_to_be_mined(txn_hash) 
+        # Wait for custodian to send password string on RSK 
+        self.logger.info('Waiting for custodian to send password string')
+        event_filter = self.rsk_contract.events.FwdAckByCustodian.createFilter(fromBlock = 'latest')
+        event = self.w3_rsk.wait_for_event(event_filter, txn_id)
+        if event is None:  # Timeout
+            self.logger.info('Customer did not send password string. Challenging..')
+            tx_hash = self.rsk_concise.fwd_no_custodian_action_challenge(
+                                                 txn_id, transact = self.rsk_tx)
+            self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
+            self.logger.info('Fwd transaction complete')
+            return 0
 
-        self.logger.info('Wait for EBTC issued event') 
-        event_filter = self.eth_contract.events.EBTCIssued.\
-                           createFilter(fromBlock = 'latest')
-        event = self.w3_eth.wait_for_event(event_filter, None) 
+        pwd_str = event['args']['pwd_str'] 
 
-    def rev_approve_ebtc(self):
-        self.logger.info('Approve Eth contract to move EBTC')
-        txn_hash = self.ebtc_concise.approve(config.eth.contract_addr, 
-                                            10 * 10**18, 
-                                            transact = self.eth_tx)
-        self.logger.info('Tx hash: %s' % HexBytes(txn_hash).hex())
-        self.w3_eth.wait_to_be_mined(txn_hash) 
+        # Issuing EBTC on Eth contract   
+        self.logger.info('Issuing EBTC on Eth contract ..')
+        tx_hash = self.eth_concise.fwd_issue(txn_id, pwd_str, 
+                                             transact = self.eth_tx) 
+        self.w3_eth.wait_to_be_mined(tx_hash)
 
-    def rev_redeem_ebtc(self, ebtc_amount):
-        self.logger.info('Surrending EBTC ..')   
-        txn_hash = self.eth_concise.redeem(config.rsk.dest_addr, ebtc_amount,
-                                           transact = self.eth_tx)
-        self.w3_eth.wait_to_be_mined(txn_hash) 
+        self.logger.info('Fwd transaction completed')
+        return 0
 
-        self.logger.info('Wait for EBTCSurrendered event')
-        event_filter = self.eth_contract.events.EBTCSurrendered.\
-                           createFilter(fromBlock = 'latest')
-        event = self.w3_eth.wait_for_event(event_filter, txn_hash) 
-        return txn_hash
-
-    def rev_redeem_sbtc(self, txn_hash_redeem):     
-        self.logger.info('Redeeming SBTC..')
-      
-        js = json.dumps({"jsonrpc" : "2.0", "id" : 0, 
-                         "method" : "eth_getTransactionByHash", 
-                         "params" : "%s" % HexBytes(txn_hash_redeem).hex()})
-        txn_hash = self.rsk_concise.redeem(txn_hash_redeem, js, 
-                                           transact = self.rsk_tx)
-        self.w3_rsk.wait_to_be_mined(txn_hash) 
-
-        self.logger.info('Wait for UserRedeemed event') 
-        event_filter = self.rsk_contract.events.UserRedeemed.\
-                           createFilter(fromBlock = 'latest')
-        event = self.w3_rsk.wait_for_event(event_filter, None) 
-
-    def run_fwd_txn(self, sbtc_amount): # sbtc->ebtc
-        txn_hash = self.fwd_deposit(sbtc_amount) 
-
-        # Wait for at least 2 blocks  
-        bn = self.w3_rsk.w3.eth.blockNumber
-        self.logger.info('Waiting for enough confirmations')       
-        while (self.w3_rsk.w3.eth.blockNumber - bn) <=2:
-            time.sleep(2)
-
-        self.fwd_issue_ebtc(txn_hash)
-
-    def run_rev_txn(self, ebtc_amount):
-        self.rev_approve_ebtc()
-
-        txn_hash = self.rev_redeem_ebtc(ebtc_amount) 
-
-        # Wait for at least 2 blocks  
-        bn = self.w3_eth.w3.eth.blockNumber
-        self.logger.info('Waiting for enough confirmations')       
-        while (self.w3_eth.w3.eth.blockNumber - bn) <=2:
-            time.sleep(2)
-        self.rev_redeem_sbtc(txn_hash)
 
 def main():
     if len(sys.argv) != 3:
