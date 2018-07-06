@@ -33,7 +33,6 @@ contract StrideEthContract is mortal {
     address public m_ebtc_token_addr; /* Set by method below */ 
     uint public m_eth_ebtc_ratio_numerator = 15;  /* For collateral */
     uint public m_eth_ebtc_ratio_denominator = 1;
-    uint public m_ether_lock_interval = 100; /* In blocks */
     uint public m_locked_eth = 0;
     uint m_event_nonce = 0; /* To establish uniqueness of transaction receipt */
 
@@ -60,11 +59,6 @@ contract StrideEthContract is mortal {
         require(msg.sender == m_owner, "Only owner can set this");
         m_eth_ebtc_ratio_numerator = numerator;
         m_eth_ebtc_ratio_denominator = denominator;
-    }
-
-    function set_lock_interval(uint nblocks) public {
-        require(msg.sender == m_owner, "Only owner can set this");
-        m_ether_lock_interval = nblocks;
     }
 
     /** Send collateral Eth to contract.  Called by Custodian 
