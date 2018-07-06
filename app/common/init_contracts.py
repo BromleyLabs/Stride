@@ -30,58 +30,36 @@ class App:
 
     def set_eth_contract_addr_on_rsk(self): 
         self.logger.info('Setting Eth contract address on RSK Contract') 
-        return self.rsk_concise.setEthContractAddr(config.eth.contract_addr,
+        return self.rsk_concise.set_eth_contract_addr(config.eth.contract_addr,
                                                      transact = self.rsk_tx) 
-
-    def set_rsk_contract_addr_on_eth(self):
-        self.logger.info('Setting RSK contract address on Eth Contract') 
-        return self.eth_concise.setRSKContractAddr(config.rsk.contract_addr,
-                                                      transact = self.eth_tx) 
+    def set_eth_proof_contract_addr_on_rsk(self): 
+        self.logger.info('Setting EthProof contract address on RSK Contract') 
+        return self.rsk_concise.set_eth_proof_addr(
+                   config.eth_proof_contract_addr, transact = self.rsk_tx) 
 
     def set_ebtc_token_addr_on_eth(self):
         self.logger.info('Setting EBTC Token address on Eth Contract') 
-        return self.eth_concise.setEBTCTokenAddress(config.eth.token_addr,
+        return self.eth_concise.set_ebtc_token_address(config.eth.token_addr,
                                                        transact = self.eth_tx) 
     def set_issuer_on_ebtc_token(self):
         self.logger.info('Setting m_issuer on Token address on Eth Contract') 
         return self.ebtc_concise.setIssuer(config.eth.contract_addr,
                                               transact = self.eth_tx) 
 
-    def set_server_url_on_eth(self):
-        self.logger.info('Setting the server URL on Eth')
-        return self.eth_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/rsk/testnet).slice(0, 136)", transact = self.eth_tx) 
-     
-    def set_server_url_rsk(self):
-       self.logger.info('Setting the server URL on RSK')
-       return self.rsk_concise.setStrideServerURL("binary(https://stride.ddns.net/stride/ethereum/ropsten).slice(0, 136)", transact = self.rsk_tx) 
-
-    def transfer_ether_from_user_to_eth(self, wei):
-        self.logger.info('Transfer some Eth to Eth contract for Oraclize')
-        txn_hash = self.eth.w3.eth.sendTransaction({
-            'from': config.eth.user, 
-            'to': config.eth.contract_addr,
-            'value' : wei 
-            }
-        )
-        self.logger.info('Tx hash: %s' % HexBytes(txn_hash).hex())
-   
-    def transfer_sbtc_from_user_to_rsk(self, wei):
-        self.logger.info('Transfer some SBTC to RSK contract for Oraclize')
-        txn_hash = self.rsk.w3.eth.sendTransaction({
-            'from' : config.rsk.user, 
-            'to': config.rsk.contract_addr,
-            'value' : wei 
-            }
-        )
-        self.logger.info('Tx hash: %s' % HexBytes(txn_hash).hex())
-
     def set_min_confirmations_on_rsk(self, n):
-        self.logger.info('Set Min confirmation on RSK')
-        return self.rsk_concise.setMinConfirmations(n, transact = self.rsk_tx) 
+        self.logger.info('Set min confirmation on RSK')
+        return self.rsk_concise.set_min_confirmations(n, 
+                                                      transact = self.rsk_tx) 
 
-    def set_min_confirmations_on_eth(self, n):
-        self.logger.info('Set Min confirmation on Eth')
-        return self.eth_concise.setMinConfirmations(n, transact = self.eth_tx) 
+    def set_custodian_on_rsk(self, addr):
+        self.logger.info('Set custodian on RSK') 
+        return self.rsk_concise.set_custodian(config.rsk.custodidan, 
+                                              transact = self.rsk_tx) 
+
+    def set_custodian_on_eth(self, addr):
+        self.logger.info('Set custodian on Eth') 
+        return self.eth_concise.set_custodian(config.eth.custodidan, 
+                                              transact = self.rsk_tx) 
 
 if __name__== '__main__':
     if len(sys.argv) != 1:
