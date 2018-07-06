@@ -36,14 +36,11 @@ contract StrideRSKContract is mortal {
     }
 
     mapping (uint => ForwardTxn) public m_fwd_txns;  
-    /* Eth txn hash => true   */
-    mapping (bytes32 => bool) public m_sbtc_issued;
+    mapping (bytes32 => bool) public m_sbtc_issued; /* receipt hash => true */
 
     address public m_custodian_rsk;   
     address public m_eth_contract_addr;
     address public m_eth_proof_addr; /* Address of EthProof contract */
-    uint public m_locked_sbtc = 0;
-    uint public m_sbtc_lock_interval = 100;  /* In blocks. */
     bytes32 public m_eth_event_hash = keccak256("EBTCSurrendered(address,uint,utint)");
     uint public m_min_confirmations = 30;
 
@@ -69,11 +66,6 @@ contract StrideRSKContract is mortal {
     function set_min_confirmations(uint n) public {
         require(msg.sender == m_owner);
         m_min_confirmations = n;
-    }
-
-    function set_lock_interval(uint nblocks) public {
-        require(msg.sender == m_owner, "Only owner can set this");
-        m_sbtc_lock_interval = nblocks;
     }
 
     /** 
@@ -125,18 +117,19 @@ contract StrideRSKContract is mortal {
         txn.state = FwdTxnStates.CHALLENGED;
     }
 
-
+    /**
+     * Decode Ethereum transaction receipt and read fields of interest 
+     */ 
     function parse_eth_txn_receipt(bytes rlp_txn_receipt) internal pure
                                    returns (EthTxnReceipt) {
-
         EthTxnReceipt memory receipt = EthTxnReceipt(0,0,0,0,0,0);
 
         RLP.RLPItem memory item = RLP.toRLPItem(rlp_txn_receipt);
         RLP.RLPItem[] memory fields = RLP.toList(item);
         receipt.status = (RLP.toUint(fields[0])); 
      
-        RLP.RLPItem[] memory logs = RLP.toList(fields[3]); /* Logs */
-        RLP.RLPItem[] memory log_fields = RLP.toList(logs[0]); /* Only 1 log */
+        RLP.RLPItem[] memory logs = RLP.toList(fields[3]); 
+        RLP.RLPItem[] memory log_fields = RLP.toList(logs[0]); 
         receipt.contract_addr = RLP.toAddress(log_fields[0]);
    
         RLP.RLPItem[] memory topics = RLP.toList(log_fields[1]);
