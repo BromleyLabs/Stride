@@ -26,6 +26,15 @@ contract StrideRSKContract is mortal {
         FwdTxnStates state;
     } 
 
+    struct EthTxnReceipt {
+        uint status;
+        address contract_addr;
+        bytes32 event_hash;
+        uint txn_block;
+        address dest_addr;
+        uint ebtc_amount;
+    }
+
     mapping (uint => ForwardTxn) public m_fwd_txns;  
     /* Eth txn hash => true   */
     mapping (bytes32 => bool) public m_sbtc_issued;
@@ -35,6 +44,8 @@ contract StrideRSKContract is mortal {
     address public m_eth_proof_addr; /* Address of EthProof contract */
     uint public m_locked_sbtc = 0;
     uint public m_sbtc_lock_interval = 100;  /* In blocks. */
+    bytes32 public m_eth_event_hash = keccak256("EBTCSurrendered(address,uint,utint)");
+    uint public m_min_confirmations = 30;
 
     event FwdUserDeposited(uint txn_id);
     event FwdAckByCustodian(uint txn_id, bytes pwd_str); 
@@ -53,6 +64,11 @@ contract StrideRSKContract is mortal {
     function set_eth_contract_addr(address addr) public {
         require(msg.sender == m_owner);
         m_eth_contract_addr = addr;
+    }
+
+    function set_min_confirmations(uint n) public {
+        require(msg.sender == m_owner);
+        m_min_confirmations = n;
     }
 
     function set_lock_interval(uint nblocks) public {
@@ -109,6 +125,32 @@ contract StrideRSKContract is mortal {
         txn.state = FwdTxnStates.CHALLENGED;
     }
 
+
+    function parse_eth_txn_receipt(bytes rlp_txn_receipt) internal pure
+                                   returns (EthTxnReceipt) {
+
+        EthTxnReceipt memory receipt = EthTxnReceipt(0,0,0,0,0,0);
+
+        RLP.RLPItem memory item = RLP.toRLPItem(rlp_txn_receipt);
+        RLP.RLPItem[] memory fields = RLP.toList(item);
+        receipt.status = (RLP.toUint(fields[0])); 
+     
+        RLP.RLPItem[] memory logs = RLP.toList(fields[3]); /* Logs */
+        RLP.RLPItem[] memory log_fields = RLP.toList(logs[0]); /* Only 1 log */
+        receipt.contract_addr = RLP.toAddress(log_fields[0]);
+   
+        RLP.RLPItem[] memory topics = RLP.toList(log_fields[1]);
+        receipt.event_hash = RLP.toBytes32(topics[0]);
+
+        RLP.RLPItem[] memory event_params = RLP.toList(log_fields[2]);
+        receipt.txn_block = RLP.toUint(event_params[2]);
+
+        receipt.dest_addr = RLP.toAddress(event_params[0]);
+        receipt.ebtc_amount = RLP.toUint(event_params[1]);
+
+        return receipt;
+    }   
+
     /** Called by the user, this function redeems SBTC to the destination 
      *  address specified on Ethereum side.  The user provides proof of 
      *  Ethereum transaction receipt which is verified in this function. Reads
@@ -123,27 +165,21 @@ contract StrideRSKContract is mortal {
     function rev_redeem(bytes rlp_txn_receipt, bytes32 block_hash, bytes path,
                         bytes rlp_parent_nodes) public {
 
-        bytes32 rlp_txn_receipt_hash =  keccak256(rlp_txn_receipt);
-        require(m_sbtc_issued[rlp_txn_receipt_hash] != true, 
+        require(m_sbtc_issued[keccak256(rlp_txn_receipt)] != true, 
                 "SBTC already issued for this transaction");
 
-        require(EthProof(m_eth_proof_addr).check_receipt_proof(rlp_txn_receipt,
+        EthProof eth_proof = EthProof(m_eth_proof_addr); 
+        require(eth_proof.check_receipt_proof(rlp_txn_receipt,
                 block_hash, path, rlp_parent_nodes), "Incorrect proof");         
-        RLP.RLPItem memory item = RLP.toRLPItem(rlp_txn_receipt);
-        RLP.RLPItem[] memory fields = RLP.toList(item);
-        uint status = (RLP.toUint(fields[0])); 
-        require(status > 0); /* The txn should have been succesful */
-     
-        RLP.RLPItem[] memory logs = RLP.toList(fields[3]); /* Logs */
-        RLP.RLPItem[] memory log_fields = RLP.toList(logs[0]); /* Only 1 log */
-        require(RLP.toAddress(log_fields[0]) == m_eth_contract_addr);
+        EthTxnReceipt memory receipt = parse_eth_txn_receipt(rlp_txn_receipt);
+        require(receipt.status > 0); /* Successful txn */
+        uint curr_block =  eth_proof.m_highest_block();
+        require((curr_block - receipt.txn_block) > m_min_confirmations);
+        require(receipt.event_hash == m_eth_event_hash); 
+        require(receipt.contract_addr == m_eth_contract_addr);
 
-        RLP.RLPItem[] memory event_params = RLP.toList(log_fields[2]);
-        address dest_addr = RLP.toAddress(event_params[0]);
-        uint sbtc_amount = RLP.toUint(event_params[1]);
-        
-        dest_addr.transfer(sbtc_amount); /* Transfer SBTC */
+        receipt.dest_addr.transfer(receipt.ebtc_amount); /* SBTC == EBTC */ 
     
-        m_sbtc_issued[rlp_txn_receipt_hash] = true; 
+        m_sbtc_issued[keccak256(rlp_txn_receipt)] = true; 
     } 
 }

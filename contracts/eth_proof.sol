@@ -9,7 +9,7 @@ contract EthProof {
     using RLP for bytes;
 
     mapping (bytes32 => BlockHeader) m_blocks;
-    uint m_highest_block;
+    uint public m_highest_block;
 
     struct BlockHeader {
       bytes32   prev_block_hash; // 0 TODO: This was uint earlier. Why?
@@ -49,6 +49,7 @@ contract EthProof {
         RLP.RLPItem[] memory rlp_h = RLP.toList(RLP.toRLPItem(rlp_header));
         block_number = RLP.toUint(rlp_h[8]);
     }
+
     /**
       Submit Ethereum block headers.  Assumption here is headers are valid. No
       validy check in this function.

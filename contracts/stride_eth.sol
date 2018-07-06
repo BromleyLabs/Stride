@@ -35,11 +35,13 @@ contract StrideEthContract is mortal {
     uint public m_eth_ebtc_ratio_denominator = 1;
     uint public m_ether_lock_interval = 100; /* In blocks */
     uint public m_locked_eth = 0;
+    uint m_event_nonce = 0; /* To establish uniqueness of transaction receipt */
 
     event FwdCustodianDeposited(uint txn_id);
     event FwdEBTCIssued(uint txn_id);
     event FwdCustodianChallengeAccepted(uint txn_id);
-    event EBTCSurrendered(address sender, uint ebtc_amount);
+    event EBTCSurrendered(address sender, uint ebtc_amount, uint block_number,
+                          uint event_nonce);
    
     /**
      * Contract initialization functions called by Owner 
@@ -143,7 +145,9 @@ contract StrideEthContract is mortal {
                                div(m_eth_ebtc_ratio_denominator); 
        m_custodian_eth.transfer(collateral_eth);
 
-       emit EBTCSurrendered(rsk_dest_addr, ebtc_amount);
+       emit EBTCSurrendered(rsk_dest_addr, ebtc_amount, block.number, 
+                            m_event_nonce);
+       m_event_nonce += 1;
    }
 }
 
