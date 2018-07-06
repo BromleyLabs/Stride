@@ -1,3 +1,8 @@
+/**
+ * @title ERC20 compliant token - EBTC - is equivalent to SBTC on RSK chaini.
+ * With respect to ERC20 the new method added is issueFreshTokens() that's used
+ * by Stride contracts.
+ */
 pragma solidity ^0.4.24;
 
 import "safe_math.sol";
@@ -17,7 +22,8 @@ contract EBTCToken is mortal {
     mapping(address => mapping(address => uint)) allowed;
 
     event Transfer(address indexed from, address indexed to, uint tokens);
-    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
+    event Approval(address indexed tokenOwner, address indexed spender, 
+                   uint tokens);
     event Issued(uint tokens);
 
     constructor() public {  /* Constructor */
@@ -33,7 +39,8 @@ contract EBTCToken is mortal {
         m_issuer = issuer; 
     }
 
-    function balanceOf(address tokenOwner) public constant returns (uint balance) {
+    function balanceOf(address tokenOwner) public constant returns (
+                       uint balance) { 
         return balances[tokenOwner];
     }
 
@@ -44,13 +51,15 @@ contract EBTCToken is mortal {
         return true;
     }
 
-    function approve(address spender, uint tokens) public returns (bool success) {
+    function approve(address spender, uint tokens) public 
+                     returns (bool success) {
         allowed[msg.sender][spender] = tokens;
         emit Approval(msg.sender, spender, tokens);
         return true;
     }
 
-    function transferFrom(address from, address to, uint tokens) public returns (bool success) {
+    function transferFrom(address from, address to, uint tokens) public 
+                          returns (bool success) {
         balances[from] = balances[from].sub(tokens);
         allowed[from][msg.sender] = allowed[from][msg.sender].sub(tokens);
         balances[to] = balances[to].add(tokens);
@@ -58,11 +67,13 @@ contract EBTCToken is mortal {
         return true;
     }
 
-    function allowance(address tokenOwner, address spender) public constant returns (uint remaining) {
+    function allowance(address tokenOwner, address spender) public constant 
+                       returns (uint remaining) {
         return allowed[tokenOwner][spender];
     }
-
-    function issueFreshTokens(address to, uint tokens) public returns (bool success) {
+ 
+    function issueFreshTokens(address to, uint tokens) public 
+                              returns (bool success) {
         require(msg.sender == m_issuer, "Only issuer can issue fresh tokens");     
         balances[to] = balances[to].add(tokens);
         m_total_supply = m_total_supply.add(tokens);
