@@ -18,7 +18,10 @@ def encode_logs(logs):
     return encoded_logs
 
 def get_rlp_receipt(r): # Receipt
-    status = int_to_buf(r['status']) 
+    if r.status == 0:
+        status = b''
+    else:
+        status = int_to_buf(r['status']) 
     cummulative_gas = int_to_buf(r['cumulativeGasUsed'])
     bloom_filter = r['logsBloom'] 
     logs = encode_logs(r['logs']) 
@@ -41,11 +44,11 @@ def build_receipt_proof(w3, receipt_trie, txn_hash):
     print('Original receipts Root = %s' % (block.receiptsRoot).hex()) 
     print('Root hash = %s' % HexBytes(receipt_trie.root_hash).hex()) 
     
-    root_node = receipt_trie.get_node(receipt_trie.root_hash)
+    #root_node = receipt_trie.get_node(receipt_trie.root_hash)
     #print_node(root_node)
-    second_node = receipt_trie.get_node(root_node[0])
+    #second_node = receipt_trie.get_node(root_node[0])
     #print_node(second_node)
-    third_node = receipt_trie.get_node(second_node[1])
+    #third_node = receipt_trie.get_node(second_node[1])
     #print_node(third_node)
 
 if __name__== '__main__':
@@ -53,5 +56,6 @@ if __name__== '__main__':
    
     receipts_trie = Trie(db = {})
     txn_hash = '0x3606ff2b53d5bbd22f6c35473aff06bbde770ed4ce5c9c6f969736206c06b94b'
+    #txn_hash = '0x7c85585eaf277bf4933f9702930263a451d62fba664be9c69f5cf891ba226e4a'
     build_receipt_proof(w3, receipts_trie, txn_hash) 
 
