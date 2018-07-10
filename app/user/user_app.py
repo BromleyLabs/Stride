@@ -6,6 +6,9 @@ import datetime
 from common import config
 from common.utils import *
 import requests
+import merkle_proof as merkel
+import rlp
+import trie.utils.nibbles as nibbles
 
 class App:
     def __init__(self, log_file):
@@ -18,6 +21,8 @@ class App:
                                  'StrideRSKContract', config.rsk.contract_addr) 
         self.ebtc_contract, self.ebtc_concise = self.w3_eth.init_contract(
                                  'EBTCToken', config.eth.token_addr) 
+        self.proof_contract, self.proof_concise = self.w3_rsk.init_contract(
+                                 'EthProof', config.eth_proof_contract_addr)
         
         self.eth_tx = {'from' : config.eth.user, 'gas' : config.eth.gas, 
                        'gasPrice' : config.eth.gas_price, 'value' : 0}
@@ -66,11 +71,12 @@ class App:
         # Transfer SBTC to RSK contract
         self.logger.info('Depositing SBTC to RSK contract ..')
         self.rsk_tx['value'] = sbtc_amount
-        tx_hash = self.rsk_concise.fwd_deposit(txn_id, 
+        txn_hash = self.rsk_concise.fwd_deposit(txn_id, 
                             self.w3_eth.w3.toBytes(hexstr = pwd_hash), 
                             timeout_interval, transact = self.rsk_tx) 
+        self.rsk_tx['value'] = 0
 
-        status = self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
+        status = self.w3_rsk.wait_to_be_mined(txn_hash) # TODO: Check for timeout
         if status == 'error':
             return 1 
         # Wait for custodian to send password string on RSK 
@@ -80,9 +86,9 @@ class App:
                                            args = {'txn_id' : txn_id})
         if event is None:  # Timeout
             self.logger.info('Customer did not send password string. Challenging..')
-            tx_hash = self.rsk_concise.fwd_no_custodian_action_challenge(
+            txn_hash = self.rsk_concise.fwd_no_custodian_action_challenge(
                                                  txn_id, transact = self.rsk_tx)
-            self.w3_rsk.wait_to_be_mined(tx_hash) # TODO: Check for timeout
+            self.w3_rsk.wait_to_be_mined(txn_hash) # TODO: Check for timeout
             self.logger.info('Fwd transaction complete')
             return 0
 
@@ -90,13 +96,66 @@ class App:
 
         # Issuing EBTC on Eth contract   
         self.logger.info('Issuing EBTC on Eth contract ..')
-        tx_hash = self.eth_concise.fwd_issue_ebtc(txn_id, pwd_str, 
+        txn_hash = self.eth_concise.fwd_issue_ebtc(txn_id, pwd_str, 
                                              transact = self.eth_tx) 
-        self.w3_eth.wait_to_be_mined(tx_hash)
+        self.w3_eth.wait_to_be_mined(txn_hash)
 
         self.logger.info('Fwd transaction completed')
         return 0
 
+    def rev_approve_ebtc(self):
+        self.logger.info('Approve Eth contract to move EBTC')
+        txn_hash = self.ebtc_concise.approve(config.eth.contract_addr, 
+                                            10 * 10**18, 
+                                            transact = self.eth_tx)
+        self.logger.info('Tx hash: %s' % HexBytes(txn_hash).hex())
+        self.w3_eth.wait_to_be_mined(txn_hash)
+
+    def rev_submit_bock_header(self, block_hash):
+        self.logger.info('Submitting block header to EthProof contract') 
+        rlp_header =  merkel.get_rlp_block_header(self.w3_eth.w3, block_hash)
+        txn_hash = self.proof_concise.submit_block(
+            block_hash, 
+            rlp_header,
+            transact = self.rsk_tx
+        )
+        self.w3_rsk.wait_to_be_mined(txn_hash)
+        
+    def run_rev_txn(self, ebtc_wei):
+        '''
+        self.logger.info('Initiating EBTC->SBTC transfer')
+
+        self.logger.info('Authorize Eth contract to move EBTC')
+        self.rev_approve_ebtc()
+
+        self.logger.info('Surrender EBTC on Eth')
+        txn_hash = self.eth_concise.rev_redeem(config.rsk.dest_addr, ebtc_wei,
+                                               transact = self.eth_tx)
+        self.w3_eth.wait_to_be_mined(txn_hash)
+   
+        n = 2 # Only for testing, otherwise it is 30
+        self.logger.info('Waiting for %d confirmations')
+        bn = self.w3_eth.w3.eth.blockNumber
+        while (self.w3_eth.w3.eth.blockNumber - bn) <=2:
+            time.sleep(2)
+
+        '''
+        self.logger.info('Initiating EBTC->SBTC transfer')
+        eth_txn_hex = '0x6f3b184c5369fdf7db65a584fae09cf39daa82d8ff49585887bef06d0e68e2e8'
+        #eth_txn_hex = HexBytes(txn_hash).hex()
+        self.logger.info('Submit Eth txn proof to RSK and redeem SBTC')
+        receipt, block_hash, path, parent_nodes = \
+            merkel.build_receipt_proof(self.w3_eth.w3, eth_txn_hex) 
+        rlp_header =  merkel.get_rlp_block_header(self.w3_eth.w3, block_hash)
+        #print(rlp_header)
+        #print(len(rlp.decode(rlp_header)))
+        self.rev_submit_bock_header(block_hash)
+        '''
+        txn_hash = self.rsk_concise.rev_redeem(receipt, block_hash, path,
+                                               parent_nodes, 
+                                               transact = self.rsk_tx) 
+        self.w3_rsk.wait_to_be_mined(txn_hash)
+        '''
 
 def main():
     if len(sys.argv) != 3:
