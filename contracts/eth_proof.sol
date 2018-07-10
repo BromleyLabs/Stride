@@ -2,13 +2,14 @@ pragma solidity ^0.4.24;
 
 import "rlp.sol";
 import "merkle_proof.sol";
+import "mortal.sol";
 
-contract EthProof {
+contract EthProof is mortal {
     using RLP for RLP.RLPItem;
     using RLP for RLP.Iterator;
     using RLP for bytes;
 
-    mapping (bytes32 => BlockHeader) m_blocks;
+    mapping (bytes32 => BlockHeader) public  m_blocks;
     uint public m_highest_block;
 
     struct BlockHeader {
@@ -45,9 +46,10 @@ contract EthProof {
     }
 
     function get_block_number(bytes rlp_header) pure internal returns (
-                              uint block_number) {
+                              uint) {
         RLP.RLPItem[] memory rlp_h = RLP.toList(RLP.toRLPItem(rlp_header));
-        block_number = RLP.toUint(rlp_h[8]);
+        uint block_number = RLP.toUint(rlp_h[8]);
+        return block_number;
     }
 
     /**
