@@ -155,7 +155,7 @@ library RLP {
  /// @param self The RLP item.
  /// @return An 'Iterator' over the item.
  function iterator(RLPItem memory self) internal pure returns (Iterator memory it) {
-     require(!isList(self));
+     require(isList(self));
      uint ptr = self._unsafe_memPtr + _payloadOffset(self);
      it._unsafe_item = self;
      it._unsafe_nextPtr = ptr;
@@ -188,7 +188,7 @@ library RLP {
  /// @param self The RLP item.
  /// @return Array of RLPItems.
  function toList(RLPItem memory self) internal pure returns (RLPItem[] memory list) {
-     require(!isList(self));
+     require(isList(self));
      uint numItems = items(self);
      list = new RLPItem[](numItems);
      Iterator memory it = iterator(self);
