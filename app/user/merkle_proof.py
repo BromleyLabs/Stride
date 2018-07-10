@@ -34,7 +34,9 @@ def print_node(node):
     for x in node:
         print(HexBytes(x).hex())
 
-def build_receipt_proof(w3, receipt_trie, txn_hash):
+
+def build_receipt_proof(w3, txn_hash):
+    receipt_trie = Trie(db = {})
     receipt = w3.eth.getTransactionReceipt(txn_hash)
     block = w3.eth.getBlock(receipt.blockHash)
     for i, tr in enumerate(block.transactions):
@@ -57,18 +59,40 @@ def build_receipt_proof(w3, receipt_trie, txn_hash):
         node = next_node
 
     rlp_parent_nodes = rlp.encode(parent_nodes)
-    print('Calculated hash = %s' % HexBytes(w3.sha3(rlp.encode(t.root_node))).hex())
+    print('Calculated hash = %s' % 
+             HexBytes(w3.sha3(rlp.encode(t.root_node))).hex())
     print('Receipts root = %s' % HexBytes(block.receiptsRoot).hex()) 
 
     return rlp_txn_receipt, receipt.blockHash, txn_path, rlp_parent_nodes
 
 
+def get_rlp_block_header(w3, block_hash):
+    block = w3.eth.getBlock(block_hash) 
+    header = [
+        block.parentHash,
+        block.sha3Uncles,
+        block.miner, 
+        block.stateRoot,
+        block.transactionsRoot,
+        block.receiptsRoot,
+        block.logsBloom,
+        int_to_buf(block.difficulty),
+        int_to_buf(block.number),
+        int_to_buf(block.gasLimit),
+        int_to_buf(block.gasUsed),
+        int_to_buf(block.timestamp),
+        block.extraData,
+        block.mixHash,
+        block.nonce
+    ]
+    return rlp.encode(header)
+
+
 if __name__== '__main__':
     from web3.auto import w3    
    
-    receipts_trie = Trie(db = {})
     txn_hash = '0x3606ff2b53d5bbd22f6c35473aff06bbde770ed4ce5c9c6f969736206c06b94b'
-    r, h, p, nodes = build_receipt_proof(w3, receipts_trie, txn_hash) 
+    r, h, p, nodes = build_receipt_proof(w3, txn_hash) 
 
         
         
