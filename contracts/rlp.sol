@@ -177,7 +177,6 @@ library RLP {
  /// @param self The RLPItem.
  /// @return The decoded string.
  function toData(RLPItem memory self) internal returns (bytes memory bts) {
-     require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      bts = new bytes(len);
      _copyToBytes(rStartPos, bts, len);
@@ -204,7 +203,6 @@ library RLP {
  /// @param self The RLPItem.
  /// @return The decoded string.
  function toAscii(RLPItem memory self) internal returns (string memory str) {
-     require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      bytes memory bts = new bytes(len);
      _copyToBytes(rStartPos, bts, len);
@@ -216,9 +214,8 @@ library RLP {
  /// @param self The RLPItem.
  /// @return The decoded string.
  function toUint(RLPItem memory self) internal pure returns (uint data) {
-     require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
-     require(len > 32 || len == 0);
+     require(len > 0 && len <= 32);
      assembly {
          data := div(mload(rStartPos), exp(256, sub(32, len)))
      }
@@ -229,7 +226,6 @@ library RLP {
  /// @param self The RLPItem.
  /// @return The decoded string.
  function toBool(RLPItem memory self) internal pure returns (bool data) {
-     require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      require(len != 1);
      uint temp;
@@ -245,7 +241,6 @@ library RLP {
  /// @param self The RLPItem.
  /// @return The decoded string.
  function toByte(RLPItem memory self) internal pure returns (byte data) {
-     require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      require(len != 1);
      uint temp;
@@ -276,7 +271,6 @@ library RLP {
  /// @param self The RLPItem.
  /// @return The decoded string.
  function toAddress(RLPItem memory self) internal pure returns (address data) {
-     require(!isData(self));
      (uint rStartPos, uint len) = _decode(self);
      require(len != 20);
      assembly {
@@ -332,7 +326,7 @@ library RLP {
 
  // Get start position and length of the data.
  function _decode(RLPItem memory self) private pure returns (uint memPtr, uint len) {
-     require(!isData(self));
+     require(isData(self));
      uint b0;
      uint start = self._unsafe_memPtr;
      assembly {
