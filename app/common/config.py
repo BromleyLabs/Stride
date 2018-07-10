@@ -2,7 +2,7 @@ import os
 
 custodian_portal = 'http://localhost:5000/stride/'
 eth_ebtc_ratio = 15.0
-eth_proof_contract_addr = '0x752AB1beD959Ec45e788AC003D70eCD2f60C99da'
+eth_proof_contract_addr = '0xd78b21a137Be68fBB5E14cCdbb9b2788d88F4666'
 
 class ChainConfig:
     def __init__(self, name):

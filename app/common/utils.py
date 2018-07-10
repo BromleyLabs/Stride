@@ -131,7 +131,7 @@ class W3Utils:
                 break
             time.sleep(5) 
         self.logger.debug(txn_receipt)
-        return status
+        return status, txn_receipt
 
     def wait_to_be_mined_batch(self, txn_hashes):
         # txn_hashes: list of txn_hash
@@ -200,9 +200,11 @@ class W3Utils:
         abi = open(abi_file, 'rt').read()
         bytecode = '0x' + open(bin_file, 'rt').read() 
         contract = self.w3.eth.contract(abi = abi, bytecode = bytecode)
-        txn_hash = contract.constructor().transact({'from' : conf.contract_owner, 
-                                         'gas' : conf.gas, 
-                                         'gasPrice' : conf.gas_price}) 
+        txn_hash = contract.constructor().transact({
+            'from' : conf.contract_owner, 
+            'gas' : conf.gas, 
+            'gasPrice' : conf.gas_price
+        }) 
         return self.wait_to_be_mined(txn_hash)
 
     def kill(self, contract_name):

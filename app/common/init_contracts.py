@@ -68,20 +68,23 @@ if __name__== '__main__':
 
     app = App('/tmp/stride.log')
     
-    '''
     # Rsk
     rsk_txns = [] 
+    '''
     txn = app.set_eth_contract_addr_on_rsk()
     rsk_txns.append(txn)
+    '''
 
     txn =  app.set_eth_proof_contract_addr_on_rsk()
     rsk_txns.append(txn)
 
+    '''
     txn = app.set_min_confirmations_on_rsk(1) # Only for testing
     rsk_txns.append(txn)
 
     txn = app.set_custodian_on_rsk()
     rsk_txns.append(txn)
+    '''
 
     app.rsk.wait_to_be_mined_batch(rsk_txns)
 
@@ -99,5 +102,6 @@ if __name__== '__main__':
     eth_txns.append(txn)
 
     app.eth.wait_to_be_mined_batch(eth_txns)
+    '''
 
 

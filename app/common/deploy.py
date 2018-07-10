@@ -17,7 +17,7 @@ def main():
     else:
         printf('Incorrect argument')
 
-    tx_receipt = chain.deploy(sys.argv[2])
+    status, tx_receipt = chain.deploy(sys.argv[2])
     logger.info('Contact address = %s' % tx_receipt['contractAddress'])
 
 if __name__== '__main__':
