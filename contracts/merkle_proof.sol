@@ -47,7 +47,6 @@ library MerklePatriciaProof {
 
         uint8 nextPathNibble = uint8(path[pathPtr]);
         if (nextPathNibble > 16) {return false;}
-        /* TODO: the below should toData? */
         nodeKey = RLP.toBytes32(currentNodeList[nextPathNibble]);
         pathPtr += 1;
       } else if (currentNodeList.length == 2) {
