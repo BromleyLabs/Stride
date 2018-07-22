@@ -122,7 +122,6 @@ class App:
         self.w3_rsk.wait_to_be_mined(txn_hash)
         
     def run_rev_txn(self, ebtc_wei):
-        '''
         self.logger.info('Initiating EBTC->SBTC transfer')
 
         self.logger.info('Authorize Eth contract to move EBTC')
@@ -138,32 +137,22 @@ class App:
         bn = self.w3_eth.w3.eth.blockNumber
         while (self.w3_eth.w3.eth.blockNumber - bn) <=2:
             time.sleep(2)
-        '''
+
         self.logger.info('Initiating EBTC->SBTC transfer')
-        eth_txn_hex = '0x67b258bd888af412a1d959e589bcee9e0dddb6744b9b2b8f4c7022e4a4b3e393'
-        #eth_txn_hex = HexBytes(txn_hash).hex()
+        eth_txn_hex = HexBytes(txn_hash).hex()
         self.logger.info('Submit Eth txn proof to RSK and redeem SBTC')
         receipt, block_hash, path, parent_nodes = \
             merkel.build_receipt_proof(self.w3_eth.w3, eth_txn_hex) 
-        
-        #r = rlp.decode(receipt)
-        #print(r[0])
-        #logs = r[3]
-        #log_fields = logs[1]
-        #print(log_fields[1])
-        #addr = log_fields[0]
-        #print(HexBytes(addr).hex())
-        #topics = log_fields[1] 
-        #print(HexBytes(topics[0]).hex())
-        #event_data = log_fields[2]
-        #print(HexBytes(event_data).hex())
 
-        #self.rev_submit_bock_header(block_hash)
-        #latest_block =  self.w3_eth.w3.eth.getBlock('latest')
-        #self.rev_submit_bock_header(latest_block.hash)
+        self.rev_submit_bock_header(block_hash)
+        latest_block =  self.w3_eth.w3.eth.getBlock('latest')
+        self.rev_submit_bock_header(latest_block.hash)
 
+        # Our last node will always be a leaf node and the path length will
+        # be even because of rlp encoding of transaction index.  Hence, add 
+        # prefix 0x20 to the path (as per hex encoding specs)
         self.logger.info('Redeeming on RSK') 
-        path = b'\x20' + path # TODO: Hardcoded. Change after testing 
+        path = b'\x20' + path
         txn_hash = self.rsk_concise.rev_redeem(receipt, block_hash, path,
                                                parent_nodes, 
                                                transact = self.rsk_tx) 
