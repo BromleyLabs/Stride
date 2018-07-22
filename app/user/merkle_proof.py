@@ -35,6 +35,7 @@ def print_node(node):
         print(HexBytes(x).hex())
 
 
+#  TODO: In the below leaf node condition, what if it is an extension node?
 def build_receipt_proof(w3, txn_hash):
     receipt_trie = Trie(db = {})
     receipt = w3.eth.getTransactionReceipt(txn_hash)
@@ -54,6 +55,8 @@ def build_receipt_proof(w3, txn_hash):
     node = t.root_node
     nibs = nibbles.bytes_to_nibbles(txn_path)
     for nib in nibs: 
+        if len(node) == 2: # Leaf node. We are done. 
+            break
         next_node = rlp.decode(t.db[node[nib]])    
         parent_nodes.append(next_node)
         node = next_node
