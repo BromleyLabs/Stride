@@ -4,7 +4,7 @@
  *
  * @dev Library for verifing merkle patricia proofs.
  */
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 import "./rlp.sol";
 
 library MerklePatriciaProof {
