@@ -30,46 +30,50 @@ library MerklePatriciaProof {
     if (path.length == 0) {return false;}
 
     for (uint i = 0; i < parentNodes.length; i++) {
-      if (pathPtr > path.length) {return false;}
+        if (pathPtr > path.length) {return false;}
 
-      currentNode = RLP.toBytes(parentNodes[i]);
-      if (nodeKey != keccak256(currentNode)) {return false;}
-      currentNodeList = RLP.toList(parentNodes[i]);
+        currentNode = RLP.toBytes(parentNodes[i]);
+        if (nodeKey != keccak256(currentNode)) {return false;}
+        currentNodeList = RLP.toList(parentNodes[i]);
 
-      if (currentNodeList.length == 17) {
-        if (pathPtr == path.length) {
-          if (keccak256(RLP.toBytes(currentNodeList[16])) == keccak256(value)) {
-            return true;
-          } else {
+        if (currentNodeList.length == 17)  {
+            if (pathPtr == path.length) {
+                if (keccak256(RLP.toBytes(currentNodeList[16])) == 
+                                          keccak256(value)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            uint8 nextPathNibble = uint8(path[pathPtr]);
+            if (nextPathNibble > 16) {return false;}
+            nodeKey = RLP.toBytes32(currentNodeList[nextPathNibble]);
+            pathPtr += 1;
+        } else if (currentNodeList.length == 2) {
+            pathPtr += _nibblesToTraverse(RLP.toData(currentNodeList[0]), 
+                                          path, pathPtr);
+
+            if (pathPtr == path.length) {//leaf node
+                if (keccak256(RLP.toData(currentNodeList[1])) == 
+                                                   keccak256(value)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            //extension node
+            if (_nibblesToTraverse(RLP.toData(currentNodeList[0]), path, 
+                                 pathPtr) == 0) {
+                return false;
+            }
+
+            nodeKey = RLP.toBytes32(currentNodeList[1]);
+        } else {
             return false;
-          }
         }
-
-        uint8 nextPathNibble = uint8(path[pathPtr]);
-        if (nextPathNibble > 16) {return false;}
-        nodeKey = RLP.toBytes32(currentNodeList[nextPathNibble]);
-        pathPtr += 1;
-      } else if (currentNodeList.length == 2) {
-        pathPtr += _nibblesToTraverse(RLP.toData(currentNodeList[0]), path, pathPtr);
-
-        if (pathPtr == path.length) {//leaf node
-          if (keccak256(RLP.toData(currentNodeList[1])) == keccak256(value)) {
-            return true;
-          } else {
-            return false;
-          }
-        }
-        //extension node
-        if (_nibblesToTraverse(RLP.toData(currentNodeList[0]), path, pathPtr) == 0) {
-          return false;
-        }
-
-        nodeKey = RLP.toBytes32(currentNodeList[1]);
-      } else {
-        return false;
-      }
     }
-  }
+}
 
   function _nibblesToTraverse(bytes encodedPartialPath, bytes path, uint pathPtr) private pure returns (uint) {
     uint len;

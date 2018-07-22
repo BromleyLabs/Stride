@@ -13,15 +13,14 @@ contract EthProof is mortal {
     uint public m_highest_block;
 
     struct BlockHeader {
-      bytes32   prev_block_hash; // 0 TODO: This was uint earlier. Why?
+      bytes32   prev_block_hash; // 0 
       bytes32   state_root;      // 3
       bytes32   txn_root;        // 4
       bytes32   receipt_root;    // 5
     }
 
-    /** Helper function 
-        TODO: block_hash was defined as uint instead of bytes32. Why? Change
-        back if valid reason.
+    /** 
+     *  Save block header 
      */
     function parse_block_header(bytes rlp_header) pure internal 
                                returns (BlockHeader) {
@@ -53,9 +52,9 @@ contract EthProof is mortal {
     }
 
     /**
-      Submit Ethereum block headers.  Assumption here is headers are valid. No
-      validy check in this function.
-      TODO: Who is authorized to submit?
+     * Submit Ethereum block headers.  Assumption here is headers are valid. No
+     * validy check in this function.
+     * TODO: Who is authorized to submit?
      */
     function submit_block(bytes32 block_hash, bytes rlp_header) public {
         BlockHeader memory header = parse_block_header(rlp_header);
@@ -65,12 +64,14 @@ contract EthProof is mortal {
         m_blocks[block_hash] = header;
     }
 
+    /**
+     * Fetches authentic receipt proof from block headers and matches it with
+     * the proof provided.
+     */
     function check_receipt_proof(bytes value, bytes32 block_hash, bytes path, 
                                  bytes parent_nodes) public returns (bool) {
         bytes32 receipt_root = m_blocks[block_hash].receipt_root;
         return MerklePatriciaProof.verify(value, path, parent_nodes, 
                                           receipt_root);
-   
     }
-
 }
