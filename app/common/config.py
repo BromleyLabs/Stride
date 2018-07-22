@@ -2,7 +2,7 @@ import os
 
 custodian_portal = 'http://localhost:5000/stride/'
 eth_ebtc_ratio = 15.0
-eth_proof_contract_addr = '0xd78b21a137Be68fBB5E14cCdbb9b2788d88F4666'
+eth_proof_contract_addr = '0x6bE323ec5516F3CEBeE6778F1E66E4C8eB50925e'
 
 class ChainConfig:
     def __init__(self, name):
@@ -23,7 +23,7 @@ class ChainConfig:
         self.dest_addr = None  # Destnation address if applicable
 
 rsk = ChainConfig('RSKTestnet')
-rsk.contract_addr = '0x971C4b156c05F9978726d703d2b5cD13767D89Fb'
+rsk.contract_addr = '0xFA834D5668E9e80CF173A6740c256eF5eB9679a1'
 rsk.contract_name = 'StrideRSKContract'
 rsk.contract_path = '/home/puneet/crypto/stride/contracts/target'
 rsk.gas = 2500000
