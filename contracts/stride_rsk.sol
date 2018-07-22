@@ -1,4 +1,5 @@
-/** @title Contract on RSK for Stride transactions. The "forward" transaction,
+/** 
+  @title Contract on RSK for Stride transactions. The "forward" transaction,
   for SBTC->EBTC is implemented using a cross-chain atomic swap where a
   Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
   automatic and is based on user providing proof of transaction of depositing
