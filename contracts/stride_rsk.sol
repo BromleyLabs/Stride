@@ -41,7 +41,7 @@ contract StrideRSKContract is mortal {
     address public m_custodian_rsk;   
     address public m_eth_contract_addr;
     address public m_eth_proof_addr; /* Address of EthProof contract */
-    bytes32 public m_eth_event_hash = keccak256("EBTCSurrendered(address,uint,utint)");
+    bytes32 public m_eth_event_hash = keccak256("EBTCSurrendered(address,uint256,uint256,uint256)");
     uint public m_min_confirmations = 30;
 
     event FwdUserDeposited(uint txn_id);
@@ -118,31 +118,61 @@ contract StrideRSKContract is mortal {
     }
 
     /**
-     * Decode Ethereum transaction receipt and read fields of interest 
+     *  Extracts 32 bytes from a byte array. CAUTION: Beware of left/right 
+     *  padding from bytes->bytes32  
+     */
+    function get_bytes32(bytes b, uint offset) internal pure returns (bytes32) {
+        bytes32 out;
+        for (uint i = 0; i < 32; i++) 
+            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8); /* CAUTION: Beware of left/right padding from bytes->bytes32  */
+        return out;
+    }
+
+    /**
+     *  Extracts 20 bytes from a byte array. Used to extract address
+     */
+
+    function get_bytes20(bytes b, uint offset) private pure returns (bytes20) {
+        bytes20 out;
+        for (uint i = 0; i < 20; i++) 
+            out |= bytes20(b[offset + i] & 0xFF) >> (i * 8); 
+        return out;
+    }
+
+    /**
+     * Decode Ethereum transaction receipt and read fields of interest. 2 event
+     * logs are expected - we are interested in the second log which is emitted
+     * by redeem function on Ethereum contract. 
+     * TODO: for status == 0 RLP.toUint() may fail as length of byte
+       array is 0. 
      */ 
-    function parse_eth_txn_receipt(bytes rlp_txn_receipt) internal pure
+    function parse_eth_txn_receipt(bytes rlp_txn_receipt) internal 
                                    returns (EthTxnReceipt) {
         EthTxnReceipt memory receipt = EthTxnReceipt(0,0,0,0,0,0);
 
         RLP.RLPItem memory item = RLP.toRLPItem(rlp_txn_receipt);
         RLP.RLPItem[] memory fields = RLP.toList(item);
-        receipt.status = (RLP.toUint(fields[0])); 
+        receipt.status = RLP.toUint(fields[0]);  /* See TODO note above */
      
         RLP.RLPItem[] memory logs = RLP.toList(fields[3]); 
-        RLP.RLPItem[] memory log_fields = RLP.toList(logs[0]); 
+        RLP.RLPItem[] memory log_fields = RLP.toList(logs[1]); /* Second log */
         receipt.contract_addr = RLP.toAddress(log_fields[0]);
    
         RLP.RLPItem[] memory topics = RLP.toList(log_fields[1]);
         receipt.event_hash = RLP.toBytes32(topics[0]);
 
-        RLP.RLPItem[] memory event_params = RLP.toList(log_fields[2]);
-        receipt.txn_block = RLP.toUint(event_params[2]);
-
-        receipt.dest_addr = RLP.toAddress(event_params[0]);
-        receipt.ebtc_amount = RLP.toUint(event_params[1]);
+        bytes memory event_data = RLP.toData(log_fields[2]);
+        uint index = 0 + 12; /* Start of address in 32 bytes field */
+        /* The data for some reason is all 32 bytes even for address */
+        receipt.dest_addr = address(get_bytes20(event_data, index)); 
+        index += 20;
+        receipt.ebtc_amount = uint(get_bytes32(event_data, index)); 
+        index += 32; 
+        receipt.txn_block = uint(get_bytes32(event_data, index));
 
         return receipt;
     }   
+
 
     /** Called by the user, this function redeems SBTC to the destination 
      *  address specified on Ethereum side.  The user provides proof of 
@@ -155,8 +185,7 @@ contract StrideRSKContract is mortal {
      *  @param path bytes path of the Merkle proof to reach root node
      *   @param rlp_parent_nodes bytes Merkle proof in the form of trie
      */
-    function rev_redeem(bytes rlp_txn_receipt, bytes32 block_hash, bytes path,
-                        bytes rlp_parent_nodes) public {
+    function rev_redeem(bytes rlp_txn_receipt, bytes32 block_hash, bytes path, bytes rlp_parent_nodes) public {
 
         require(m_sbtc_issued[keccak256(rlp_txn_receipt)] != true, 
                 "SBTC already issued for this transaction");
@@ -164,8 +193,9 @@ contract StrideRSKContract is mortal {
         EthProof eth_proof = EthProof(m_eth_proof_addr); 
         require(eth_proof.check_receipt_proof(rlp_txn_receipt,
                 block_hash, path, rlp_parent_nodes), "Incorrect proof");         
+        
         EthTxnReceipt memory receipt = parse_eth_txn_receipt(rlp_txn_receipt);
-        require(receipt.status > 0); /* Successful txn */
+        require(receipt.status == 1); /* Successful txn */
         uint curr_block =  eth_proof.m_highest_block();
         require((curr_block - receipt.txn_block) > m_min_confirmations);
         require(receipt.event_hash == m_eth_event_hash); 
