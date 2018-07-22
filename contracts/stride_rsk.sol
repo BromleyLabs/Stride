@@ -11,9 +11,11 @@ pragma solidity ^0.4.24;
 import "safe_math.sol";
 import "mortal.sol";
 import "eth_proof.sol";
+import "utils.sol";
 
 contract StrideRSKContract is mortal {
     using SafeMath for uint;
+    using StrideUtils for bytes;
 
     enum FwdTxnStates {UNINITIALIZED, DEPOSITED, ACKNOWLEDGED, CHALLENGED}
 
@@ -119,28 +121,6 @@ contract StrideRSKContract is mortal {
     }
 
     /**
-     *  Extracts 32 bytes from a byte array. CAUTION: Beware of left/right 
-     *  padding from bytes->bytes32  
-     */
-    function get_bytes32(bytes b, uint offset) internal pure returns (bytes32) {
-        bytes32 out;
-        for (uint i = 0; i < 32; i++) 
-            out |= bytes32(b[offset + i] & 0xFF) >> (i * 8); /* CAUTION: Beware of left/right padding from bytes->bytes32  */
-        return out;
-    }
-
-    /**
-     *  Extracts 20 bytes from a byte array. Used to extract address
-     */
-
-    function get_bytes20(bytes b, uint offset) private pure returns (bytes20) {
-        bytes20 out;
-        for (uint i = 0; i < 20; i++) 
-            out |= bytes20(b[offset + i] & 0xFF) >> (i * 8); 
-        return out;
-    }
-
-    /**
      * Decode Ethereum transaction receipt and read fields of interest. 2 event
      * logs are expected - we are interested in the second log which is emitted
      * by redeem function on Ethereum contract. 
@@ -165,11 +145,11 @@ contract StrideRSKContract is mortal {
         bytes memory event_data = RLP.toData(log_fields[2]);
         uint index = 0 + 12; /* Start of address in 32 bytes field */
         /* The data for some reason is all 32 bytes even for address */
-        receipt.dest_addr = address(get_bytes20(event_data, index)); 
+        receipt.dest_addr = address(StrideUtils.get_bytes20(event_data, index)); 
         index += 20;
-        receipt.ebtc_amount = uint(get_bytes32(event_data, index)); 
+        receipt.ebtc_amount = uint(StrideUtils.get_bytes32(event_data, index)); 
         index += 32; 
-        receipt.txn_block = uint(get_bytes32(event_data, index));
+        receipt.txn_block = uint(StrideUtils.get_bytes32(event_data, index));
 
         return receipt;
     }   
