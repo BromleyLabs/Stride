@@ -272,7 +272,7 @@ library RLP {
  /// @return The decoded string.
  function toAddress(RLPItem memory self) internal pure returns (address data) {
      (uint rStartPos, uint len) = _decode(self);
-     require(len != 20);
+     require(len == 20);
      assembly {
          data := div(mload(rStartPos), exp(256, 12))
      }
@@ -326,7 +326,7 @@ library RLP {
 
  // Get start position and length of the data.
  function _decode(RLPItem memory self) private pure returns (uint memPtr, uint len) {
-     require(isData(self));
+     //require(isData(self)); /* TODO: For some reason this does not work */
      uint b0;
      uint start = self._unsafe_memPtr;
      assembly {
