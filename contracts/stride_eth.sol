@@ -1,7 +1,7 @@
 /** 
  * @title Contract on Ethereum for Stride transactions. The "forward" 
  * transaction, for SBTC->EBTC is implemented using a cross-chain atomic swap 
- * where a Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however,
+ * where a custodian is involved. The "reverse" tansaction, EBTC->SBTC, however,
  * is automatic and is based on user providing proof of transaction that burns 
  * EBTC on Ethereum contract. 
  * 
@@ -66,7 +66,7 @@ contract StrideEthContract is mortal {
     }
 
     /**
-     * Send collateral Eth to contract.  Called by Custodian.
+     * Send collateral Ether to contract.  Called by custodian.
      */
     function fwd_deposit(uint txn_id, address user_eth, 
                          bytes32 custodian_pwd_hash, uint timeout_interval, 
@@ -108,7 +108,7 @@ contract StrideEthContract is mortal {
     }
 
     /** 
-     * Callenge by custodian for no user action 
+     * Challenge by custodian for no user action. 
      */
     function fwd_no_user_action_challenge(uint txn_id) public {
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -127,7 +127,7 @@ contract StrideEthContract is mortal {
      * Function called by user to redeem EBTC. It is assumed that user has
      * approved EBTC transfer by this contract. The function burns the EBTCs
      * by sending to a NULL address. The corresponding collateral Ether is 
-     * transferred back to Custodian.  The event generated here will be part
+     * transferred back to custodian.  The event generated here will be part
      * of logs in the transaction receipt. RSK contract will verify transaction
      * receipt of this transaction, read rsk_dest_addr and ebtc_amount values
      * from logs and transfer equivalent SBTC.

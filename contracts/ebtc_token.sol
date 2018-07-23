@@ -1,5 +1,5 @@
 /**
- * @title ERC20 compliant token - EBTC - is equivalent to SBTC on RSK chaini.
+ * @title ERC20 compliant token - EBTC - is equivalent to SBTC on RSK chain.
  * With respect to ERC20 the new method added is issueFreshTokens() that's used
  * by Stride contracts.
  *
@@ -85,6 +85,7 @@ contract EBTCToken is mortal {
         return true;
     }
 
+    /* TODO: The function below can help in reentrancy attack. Review */
     function () public payable { /* Don't accept any Eth */
         revert();
     }

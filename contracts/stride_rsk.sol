@@ -1,8 +1,8 @@
 /** 
  * @title Contract on RSK for Stride transactions. The "forward" transaction,
  * for SBTC->EBTC is implemented using a cross-chain atomic swap where a
- * Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
- * automatic and is based on User providing proof of transaction of depositing
+ * custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
+ * automatic and is based on user providing proof of transaction of depositing
  * EBTC on Ethereum contract. 
  *
  * @author Bon Filey (bonfiley@gmail.com)
@@ -76,8 +76,8 @@ contract StrideRSKContract is mortal {
 
     /** 
      * Initate SBTC->EBTC transfer by first depositing SBTC to this 
-     * contract. Called by User. Note: Custodian may want to check if this 
-     * amount is as per  agreed while hash off-chain transaction. 
+     * contract. Called by user. Note: custodian may want to check if this 
+     * amount is as agreed during off-chain transaction. 
      */
     function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
                          uint timeout_interval) public payable {
@@ -93,7 +93,7 @@ contract StrideRSKContract is mortal {
     }
 
     /** 
-     * Send password string to User as acknowledgment. Called by Custodian.
+     * Send password string to user as acknowledgment. Called by custodian.
      */
     function fwd_ack(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -110,7 +110,7 @@ contract StrideRSKContract is mortal {
     }
 
     /** 
-     * Called by user. Refund in case no action by Custodian. 
+     * Called by user. Refund in case no action by custodian. 
      */ 
     function fwd_no_custodian_action_challenge(uint txn_id) public {
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -125,7 +125,7 @@ contract StrideRSKContract is mortal {
     /**
      * Decode Ethereum transaction receipt and read fields of interest. 2 event
      * logs are expected - we are interested in the second log which is emitted
-     * by redeem function on Ethereum contract. 
+     * by rev_redeem() function on Ethereum contract. 
      * TODO: for status == 0 RLP.toUint() may fail as length of byte array is 0.
      */ 
     function parse_eth_txn_receipt(bytes rlp_txn_receipt) internal 
@@ -156,10 +156,10 @@ contract StrideRSKContract is mortal {
     }   
 
 
-    /** Called by the User, this function redeems SBTC to the destination 
-     *  address specified on Ethereum side.  The User provides proof of 
+    /** Called by the user, this function redeems SBTC to the destination 
+     *  address specified on Ethereum side.  The user provides proof of 
      *  Ethereum transaction receipt which is verified in this function. Reads
-     *  logs in transaction receipt containing User RSK destination address and 
+     *  logs in transaction receipt containing user RSK destination address and 
      *  SBTC amount (refer to Ethereum contract). 
      *  @param rlp_txn_receipt bytes The full transaction receipt structure 
      *  @param block_hash bytes32 Hash of the block in which Ethereum 
