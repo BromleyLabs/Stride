@@ -1,5 +1,6 @@
 /**
- * @title ERC20 compliant token - EBTC - is equivalent to SBTC on RSK chain.
+ * @title ERC20 compliant token - EBTC. 
+ * @dev EBTC is  equivalent to SBTC on RSK chain.
  * With respect to ERC20 the new method added is issueFreshTokens() that's used
  * by Stride contracts.
  *
@@ -12,8 +13,7 @@ pragma solidity ^0.4.24;
 import "safe_math.sol";
 import "mortal.sol";
 
-/* Compliant to ERC20 token */
-contract EBTCToken is mortal {
+contract EBTCToken is mortal { /* ERC20 compliant */
     using SafeMath for uint;
 
     string public m_symbol;

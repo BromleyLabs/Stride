@@ -28,7 +28,7 @@ contract EthProof is mortal {
     }
 
     /** 
-     *  Save block header.
+     *  @dev Parse block header.
      */
     function parse_block_header(bytes rlp_header) pure internal 
                                returns (BlockHeader) {
@@ -60,8 +60,8 @@ contract EthProof is mortal {
     }
 
     /**
-     * Submit Ethereum block headers.  Assumption here is headers are valid. No
-     * validy check in this function.
+     * @dev Submit Ethereum block headers.  Assumption here is headers are 
+     * valid. No validy check in this function.
      * TODO: Who is authorized to submit?
      */
     function submit_block(bytes32 block_hash, bytes rlp_header) public {
@@ -73,8 +73,8 @@ contract EthProof is mortal {
     }
 
     /**
-     * Fetches authentic receipt root from block headers and matches it with
-     * the proof provided.
+     * @dev Fetches authentic receipt root from block headers and matches it 
+     * with the proof provided.
      */
     function check_receipt_proof(bytes value, bytes32 block_hash, bytes path, 
                                  bytes parent_nodes) public returns (bool) {

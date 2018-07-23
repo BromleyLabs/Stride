@@ -1,5 +1,6 @@
 /** 
- * @title Contract on Ethereum for Stride transactions. The "forward" 
+ * @title Stride Ethereum Contract 
+ * @dev Contract on Ethereum for Stride transactions. The "forward" 
  * transaction, for SBTC->EBTC is implemented using a cross-chain atomic swap 
  * where a custodian is involved. The "reverse" tansaction, EBTC->SBTC, however,
  * is automatic and is based on user providing proof of transaction that burns 
@@ -47,7 +48,7 @@ contract StrideEthContract is mortal {
                           uint event_nonce);
    
     /**
-     * Contract initialization functions called by Owner 
+     * @dev Contract initialization functions called by Owner 
      */
     function set_custodian(address addr) public {
         require(msg.sender == m_owner);
@@ -66,7 +67,7 @@ contract StrideEthContract is mortal {
     }
 
     /**
-     * Send collateral Ether to contract.  Called by custodian.
+     * @dev Send collateral Ether to contract.  Called by custodian.
      */
     function fwd_deposit(uint txn_id, address user_eth, 
                          bytes32 custodian_pwd_hash, uint timeout_interval, 
@@ -87,7 +88,7 @@ contract StrideEthContract is mortal {
     }
 
     /** 
-     * Issue EBTCs to user. Called by user. 
+     * @dev Issue EBTCs to user. Called by user. 
      * TODO: Move txn.state = FxdTxnStates.ISSUED before issuing tokens to 
      * avoid reentrancy bug 
      */
@@ -108,7 +109,7 @@ contract StrideEthContract is mortal {
     }
 
     /** 
-     * Challenge by custodian for no user action. 
+     * @dev Challenge by custodian for no user action. 
      */
     function fwd_no_user_action_challenge(uint txn_id) public {
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -124,7 +125,7 @@ contract StrideEthContract is mortal {
     }
 
     /** 
-     * Function called by user to redeem EBTC. It is assumed that user has
+     * @dev Function called by user to redeem EBTC. It is assumed that user has
      * approved EBTC transfer by this contract. The function burns the EBTCs
      * by sending to a NULL address. The corresponding collateral Ether is 
      * transferred back to custodian.  The event generated here will be part
