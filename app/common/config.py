@@ -1,3 +1,9 @@
+# Test configuration to run User and Customer app. The deployed contract 
+# addresses can be found here.
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
+
 import os
 
 custodian_portal = 'http://localhost:5000/stride/'

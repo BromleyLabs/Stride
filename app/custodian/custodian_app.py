@@ -1,4 +1,7 @@
 # This daemon will run by customer at his premises or in his control. 
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
 
 import json
 from pymongo import MongoClient

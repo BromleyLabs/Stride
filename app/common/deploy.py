@@ -1,3 +1,6 @@
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
+
 from web3 import Web3
 from hexbytes import HexBytes
 import sys

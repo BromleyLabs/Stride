@@ -1,4 +1,13 @@
-# This daemon will run by customer at his premises or in his control. 
+# Script to test the forward and reverse transaction of SBTC<-->EBTC. The 
+# methods here are called by the User. It assumed that Custodian's server
+# is available for User to receive the secret password hash.  The forward 
+# transaction is a cross-chain atomic swap, hence requires Custodian's 
+# participation in the process.  Refer to custodian_app.py for Custodian side
+# process 
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
+ 
 import sys
 import uuid
 import json

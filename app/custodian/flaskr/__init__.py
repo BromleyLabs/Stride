@@ -1,5 +1,9 @@
 # This script is to be run as server for custodian to issue secret password
 # to user on request
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
+
 import os
 import sys
 from flask import Flask, request, abort, Response 

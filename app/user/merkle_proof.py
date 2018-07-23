@@ -1,3 +1,8 @@
+# Functions to generate Merkle Patricia Trie proof for transaction receipts.
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
+
 from common.utils import *
 from common import config
 from hexbytes import HexBytes

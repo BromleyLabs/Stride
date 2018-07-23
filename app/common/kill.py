@@ -1,4 +1,7 @@
 # Kill a given contract on either RSK or ETH 
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
 
 import sys
 from web3 import Web3

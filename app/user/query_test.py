@@ -1,4 +1,7 @@
-# Test script to test response from custodian portal.
+# Test script to test response from Custodian portal.
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
 
 import json
 import requests

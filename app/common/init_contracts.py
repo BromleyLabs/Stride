@@ -2,6 +2,9 @@
 # deployed.  The functions here set various member variables needed for 
 # executing transactions. Would need to run this script only once after 
 # all contracts are uploaded.
+#
+# Author: Bon Filey (bonfiley@gmail.com)
+# Copyright 2018 Bromley Labs Inc.
 
 from web3 import Web3
 from hexbytes import HexBytes
