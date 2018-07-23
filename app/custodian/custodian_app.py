@@ -91,7 +91,7 @@ class App:
             return 0
          
         # Send pwd str to user
-        self.logger.info('Transferring SBTC to custodian addr on RSK') 
+        self.logger.info('Ack to User on RSK') 
         tx_hash = self.rsk_concise.fwd_ack(txn_id, bytes(pwd_str, 'utf-8'), 
                                            transact = self.rsk_tx) 
         self.w3_rsk.wait_to_be_mined(tx_hash)
