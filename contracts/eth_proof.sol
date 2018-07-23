@@ -1,5 +1,6 @@
 /** 
- * @title Contract to main Ethereum block headers and validation of Merkle Proof * of transaction receipt
+ * @title Contract to save Ethereum block headers and validate Merkle Proof of 
+ * transaction receipt.
  *
  * @author Bon Filey (bonfiley@gmail.com)
  * Copyright 2018 Bromley Labs Inc. 
@@ -27,7 +28,7 @@ contract EthProof is mortal {
     }
 
     /** 
-     *  Save block header 
+     *  Save block header.
      */
     function parse_block_header(bytes rlp_header) pure internal 
                                returns (BlockHeader) {
@@ -72,7 +73,7 @@ contract EthProof is mortal {
     }
 
     /**
-     * Fetches authentic receipt proof from block headers and matches it with
+     * Fetches authentic receipt root from block headers and matches it with
      * the proof provided.
      */
     function check_receipt_proof(bytes value, bytes32 block_hash, bytes path, 
