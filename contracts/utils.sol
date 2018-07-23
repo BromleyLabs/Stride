@@ -1,5 +1,5 @@
 /** 
- * @title Utis for Stride contracts 
+ * @title Utils for Stride contracts.
  *
  * @author Bon Filey (bonfiley@gmail.com)
  * Copyright 2018 Bromley Labs Inc. 
@@ -10,7 +10,7 @@ pragma solidity ^0.4.24;
 library StrideUtils {
     /**
      *  Extracts 32 bytes from a byte array. CAUTION: Beware of left/right 
-     *  padding from bytes->bytes32  
+     *  padding from bytes->bytes32.  
      */
     function get_bytes32(bytes b, uint offset) internal pure returns (bytes32) {
         bytes32 out;
@@ -20,7 +20,7 @@ library StrideUtils {
     }
 
     /**
-     *  Extracts 20 bytes from a byte array. Typically used to extract address
+     *  Extracts 20 bytes from a byte array. Typically used to extract address.
      */
     function get_bytes20(bytes b, uint offset) internal pure returns (bytes20) {
         bytes20 out;
