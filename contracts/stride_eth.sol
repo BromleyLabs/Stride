@@ -75,8 +75,7 @@ contract StrideEthContract is mortal {
         require(m_fwd_txns[txn_id].txn_id != txn_id, 
                 "Transaction already exists");
         require(msg.sender == m_custodian_eth);
-        uint memory collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).
-                               div(m_eth_ebtc_ratio_denominator); 
+        uint collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).div(m_eth_ebtc_ratio_denominator); 
         require(msg.value == collateral_eth); 
 
         m_fwd_txns[txn_id] = ForwardTxn(txn_id, user_eth, custodian_pwd_hash, 
