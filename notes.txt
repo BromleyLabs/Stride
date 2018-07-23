@@ -94,3 +94,19 @@ ttributeDict({'gasUsed': 46786, 'contractAddress': None, 'transactionIndex': 1, 
 For generating Trie in python install py-trie 
 
 ================
+Gas used for latest version as of 22-July-2018:
+
+Forward Txn
+===========
+Custodian,ETH,Deposit ether to contract:     190455
+Custodian, RSK,Ack to user:                   32632
+User,RSK,Deposit SBTC:                       167529
+User,Eth,Issue EBTC:                          61786
+
+Reverse Txn:
+===========
+User,Eth,Approve EBTC:                        30537
+User,ETh,Surrender EBTC:                      45223
+ThirdParty,RSK,Submit block header:          171505
+ThirdParty,RSK,Submit highest block:         164643
+User,RSK,Redeem SBTC:                        273165
