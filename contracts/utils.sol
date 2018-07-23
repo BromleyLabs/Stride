@@ -1,3 +1,10 @@
+/** 
+ * @title Utis for Stride contracts 
+ *
+ * @author Bon Filey (bonfiley@gmail.com)
+ * Copyright 2018 Bromley Labs Inc. 
+ */ 
+
 pragma solidity ^0.4.24;
 
 library StrideUtils {

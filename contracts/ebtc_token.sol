@@ -2,6 +2,10 @@
  * @title ERC20 compliant token - EBTC - is equivalent to SBTC on RSK chaini.
  * With respect to ERC20 the new method added is issueFreshTokens() that's used
  * by Stride contracts.
+ *
+ * @author Bon Filey (bonfiley@gmail.com)
+ *
+ * Copyright 2018 Bromley Labs Inc. 
  */
 pragma solidity ^0.4.24;
 

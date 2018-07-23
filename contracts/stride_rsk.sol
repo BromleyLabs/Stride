@@ -1,10 +1,13 @@
 /** 
-  @title Contract on RSK for Stride transactions. The "forward" transaction,
-  for SBTC->EBTC is implemented using a cross-chain atomic swap where a
-  Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
-  automatic and is based on user providing proof of transaction of depositing
-  EBTC on Ethereum contract. 
-*/ 
+ * @title Contract on RSK for Stride transactions. The "forward" transaction,
+ * for SBTC->EBTC is implemented using a cross-chain atomic swap where a
+ * Custodian is involved. The "reverse" tansaction, EBTC->SBTC, however, is 
+ * automatic and is based on user providing proof of transaction of depositing
+ * EBTC on Ethereum contract. 
+ *
+ * @author Bon Filey (bonfiley@gmail.com)
+ * Copyright 2018 Bromley Labs Inc. 
+ */ 
 
 pragma solidity ^0.4.24;
 

@@ -1,3 +1,10 @@
+/** 
+ * @title Contract to main Ethereum block headers and validation of Merkle Proof * of transaction receipt
+ *
+ * @author Bon Filey (bonfiley@gmail.com)
+ * Copyright 2018 Bromley Labs Inc. 
+ */
+
 pragma solidity ^0.4.24;
 
 import "rlp.sol";
