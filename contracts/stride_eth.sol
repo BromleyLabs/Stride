@@ -65,8 +65,8 @@ contract StrideEthContract is mortal {
         m_eth_ebtc_ratio_denominator = denominator;
     }
 
-    /** Send collateral Eth to contract.  Called by Custodian 
-     *  TODO: Doposit slightly higher amount.  See notes for rev_redeem().  
+    /**
+     * Send collateral Eth to contract.  Called by Custodian.
      */
     function fwd_deposit(uint txn_id, address user_eth, 
                          bytes32 custodian_pwd_hash, uint timeout_interval, 
@@ -75,7 +75,7 @@ contract StrideEthContract is mortal {
         require(m_fwd_txns[txn_id].txn_id != txn_id, 
                 "Transaction already exists");
         require(msg.sender == m_custodian_eth);
-        uint collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).
+        uint memory collateral_eth = (ebtc_amount.mul(m_eth_ebtc_ratio_numerator)).
                                div(m_eth_ebtc_ratio_denominator); 
         require(msg.value == collateral_eth); 
 
@@ -88,7 +88,9 @@ contract StrideEthContract is mortal {
     }
 
     /** 
-     * Issue EBTCs to user. Called by user 
+     * Issue EBTCs to user. Called by user. 
+     * TODO: Move txn.state = FxdTxnStates.ISSUED before issuing tokens to 
+     * avoid reentrancy bug 
      */
     function fwd_issue_ebtc(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -101,13 +103,13 @@ contract StrideEthContract is mortal {
 
         require(EBTCToken(m_ebtc_token_addr).issueFreshTokens(txn.user_eth, 
                                                               txn.ebtc_amount));
-        txn.state = FwdTxnStates.ISSUED;
+        txn.state = FwdTxnStates.ISSUED; 
 
         emit FwdEBTCIssued(txn_id);
     }
 
     /** 
-     *Callenge by custodian for no user action 
+     * Callenge by custodian for no user action 
      */
     function fwd_no_user_action_challenge(uint txn_id) public {
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -133,8 +135,6 @@ contract StrideEthContract is mortal {
      * @param ebtc_amount uint in Wei
      * @param rsk_dest_addr address on RSK to which equivalent SBTCs need to be
      *  transferred.  
-     * TODO: Initial deposited Ether amount should be slightly more to take
-     * care of any rounding off issues while transferring back to custodian. 
      */
     function rev_redeem(address rsk_dest_addr, uint ebtc_amount) public {
        require(EBTCToken(m_ebtc_token_addr).transferFrom(msg.sender, 0x0, 
