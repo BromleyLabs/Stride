@@ -3,7 +3,7 @@
 # transaction (SBTC-->EBTC). The User requests are read from a RabbitMQ 
 # messaging Q. The Flask Web microframework is used to receive User requests
 # and pass it on to RabbitMQ queue.  This setup is for testing purposes only. 
-# For production deployments, an full fledged server like Apache may be 
+# For production deployments, a full fledged server like Apache may be 
 # considered. 
 #
 # Author: Bon Filey (bonfiley@gmail.com)
