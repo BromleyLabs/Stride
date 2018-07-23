@@ -1,5 +1,7 @@
-# This script is to be run as server for custodian to issue secret password
-# to user on request
+# This script serves as a front end for Custodian to receive User's JSON
+# RPC request to initiate a forward transaction (SBTC --> EBTC). The methods
+# here parse the incoming requests, validate them and pass them to RabbitMQ
+# queue which in turn is read by the Custodian daemon. See custodian_app.py 
 #
 # Author: Bon Filey (bonfiley@gmail.com)
 # Copyright 2018 Bromley Labs Inc.

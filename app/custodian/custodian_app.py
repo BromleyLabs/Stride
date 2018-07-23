@@ -1,4 +1,10 @@
-# This daemon will run by customer at his premises or in his control. 
+# This script contains daemon to be run at Custodian's premises that responds
+# to User requests and calls appropriate contract methods for forward 
+# transaction (SBTC-->EBTC). The User requests are read from a RabbitMQ 
+# messaging Q. The Flask Web microframework is used to receive User requests
+# and pass it on to RabbitMQ queue.  This setup is for testing purposes only. 
+# For production deployments, an full fledged server like Apache may be 
+# considered. 
 #
 # Author: Bon Filey (bonfiley@gmail.com)
 # Copyright 2018 Bromley Labs Inc.
