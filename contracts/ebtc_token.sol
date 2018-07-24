@@ -84,9 +84,4 @@ contract EBTCToken is mortal { /* ERC20 compliant */
         emit Issued(tokens);
         return true;
     }
-
-    /* TODO: The function below can help in reentrancy attack. Review */
-    function () public payable { /* Don't accept any Eth */
-        revert();
-    }
 }
