@@ -89,8 +89,6 @@ contract StrideEthContract is mortal {
 
     /** 
      * @dev Issue EBTCs to user. Called by user. 
-     * TODO: Move txn.state = FxdTxnStates.ISSUED before issuing tokens to 
-     * avoid reentrancy bug 
      */
     function fwd_issue_ebtc(uint txn_id, bytes pwd_str) public { 
         ForwardTxn storage txn = m_fwd_txns[txn_id]; 
@@ -101,9 +99,10 @@ contract StrideEthContract is mortal {
         require(txn.custodian_pwd_hash == keccak256(pwd_str), 
                 "Hash does not match");
 
+        txn.state = FwdTxnStates.ISSUED; 
+
         require(EBTCToken(m_ebtc_token_addr).issueFreshTokens(txn.user_eth, 
                                                               txn.ebtc_amount));
-        txn.state = FwdTxnStates.ISSUED; 
 
         emit FwdEBTCIssued(txn_id);
     }
