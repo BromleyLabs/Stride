@@ -118,8 +118,9 @@ contract StrideEthContract is mortal {
                 "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
 
-        m_custodian_eth.transfer(txn.collateral_eth);
         txn.state = FwdTxnStates.CHALLENGED;
+
+        m_custodian_eth.transfer(txn.collateral_eth);
 
         emit FwdCustodianChallengeAccepted(txn_id);
     }

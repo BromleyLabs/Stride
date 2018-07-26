@@ -119,8 +119,9 @@ contract StrideRSKContract is mortal {
         require(txn.state == FwdTxnStates.DEPOSITED, "Transaction not in DEPOSITED state"); 
         require(block.number > (txn.creation_block + txn.timeout_interval));
 
-        txn.user_rsk.transfer(txn.sbtc_amount);
         txn.state = FwdTxnStates.CHALLENGED;
+
+        txn.user_rsk.transfer(txn.sbtc_amount);
     }
 
     /**
@@ -185,8 +186,9 @@ contract StrideRSKContract is mortal {
         require(receipt.event_hash == m_eth_event_hash); 
         require(receipt.contract_addr == m_eth_contract_addr);
 
+        m_sbtc_issued[keccak256(rlp_txn_receipt)] = true; 
+
         receipt.dest_addr.transfer(receipt.ebtc_amount); /* SBTC == EBTC */ 
     
-        m_sbtc_issued[keccak256(rlp_txn_receipt)] = true; 
     } 
 }
