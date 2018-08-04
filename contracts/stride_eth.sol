@@ -41,7 +41,7 @@ contract StrideEthContract is mortal {
     uint public m_locked_eth = 0;
     uint m_event_nonce = 0; /* To establish uniqueness of transaction receipt */
 
-    event FwdCustodianDeposited(uint txn_id);
+    event FwdCustodianDeposited(uint txn_id, address user_eth);
     event FwdEBTCIssued(uint txn_id);
     event FwdCustodianChallengeAccepted(uint txn_id);
     event EBTCSurrendered(address sender, uint ebtc_amount, uint block_number,
@@ -84,7 +84,7 @@ contract StrideEthContract is mortal {
                                         ebtc_amount, collateral_eth, 
                                         FwdTxnStates.DEPOSITED);
         
-        emit FwdCustodianDeposited(txn_id); 
+        emit FwdCustodianDeposited(txn_id, user_eth); 
     }
 
     /** 

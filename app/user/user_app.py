@@ -72,7 +72,8 @@ class App:
         self.logger.info('Waiting for custodian to transfer Ether')
         event_filter = self.eth_contract.events.FwdCustodianDeposited.createFilter(fromBlock = 'latest')
         event = self.w3_eth.wait_for_event(event_filter, 
-                                           args = {'txn_id' : txn_id})
+                                           args = {'txn_id' : txn_id,
+                                                   'user_eth' : config.eth.user })
         if event is None:  # Timeout 
             self.logger.info('Custodian did not respond. Quiting.')
             return 0 
