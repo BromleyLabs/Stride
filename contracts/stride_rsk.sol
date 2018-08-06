@@ -79,6 +79,7 @@ contract StrideRSKContract is mortal {
      * @dev Initate SBTC->EBTC transfer by first depositing SBTC to this 
      * contract. Called by user. Note: custodian may want to check if this 
      * amount is as agreed during off-chain transaction. 
+     * TODO: Should time_interval be passed by user as params?
      */
     function fwd_deposit(uint txn_id, bytes32 custodian_pwd_hash, 
                          uint timeout_interval) public payable {
