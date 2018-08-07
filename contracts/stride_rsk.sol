@@ -52,6 +52,7 @@ contract StrideRSKContract is mortal {
     uint public m_min_confirmations;
     uint public m_lock_interval; /* In blocks */
     uint public m_collateral = 0; 
+    bool public m_collateral_deposited;
 
     event FwdUserDeposited(uint txn_id, uint sbtc_amount);
     event FwdSBTCIssued(uint txn_id, bytes pwd_str); 
@@ -65,6 +66,7 @@ contract StrideRSKContract is mortal {
         m_min_confirmations = min_confirmations;
         m_lock_interval = lock_interval; 
         m_eth_event_hash = keccak256("EBTCSurrendered(address,uint256,uint256,uint256)");
+        m_collateral_deposited = false;
     }
 
     /**
@@ -72,10 +74,19 @@ contract StrideRSKContract is mortal {
      */
     function deposit_collateral() public payable {
         require(msg.sender == m_custodian_rsk);
-        require(m_collateral == 0); /* One time */
-        
+        require(!m_collateral_deposited); /* One time */
+
         m_collateral = msg.value;
+        m_collateral_deposited = true;
     }  
+
+    /**
+     * @ dev we don't want any SBTCs into this contract transfered via any
+     * transaction other than the deposit_collateral() method 
+     */
+     function () public payable { 
+        revert();
+    }
 
     /** 
      * @dev Initate a cross atomic swap transfer by first depositing SBTC to 
@@ -191,8 +202,8 @@ contract StrideRSKContract is mortal {
         require(receipt.contract_addr == m_eth_contract_addr);
 
         m_sbtc_issued[keccak256(rlp_txn_receipt)] = true; 
-
-        receipt.dest_addr.transfer(receipt.ebtc_amount); /* SBTC == EBTC */ 
+        m_collateral = m_collateral.sub(receipt.ebtc_amount); /* SBTC==EBTC */
+        receipt.dest_addr.transfer(receipt.ebtc_amount); 
     
     } 
 }
