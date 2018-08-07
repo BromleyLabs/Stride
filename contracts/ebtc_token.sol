@@ -1,8 +1,8 @@
 /**
- * @title ERC20 compliant token - EBTC. 
- * @dev EBTC is  equivalent to SBTC on RSK chain.
- * With respect to ERC20 the new method added is issueFreshTokens() that's used
- * by Stride contracts.
+ * @title ERC20 compliant fixed supply token - EBTC. 
+ * @dev EBTC is  equivalent to SBTC on RSK chain. This is a fixed supply token
+ * which is initialized during deployment of this contract.  The owner is 
+ * is issued the requested amount.
  *
  * @author Bon Filey (bonfiley@gmail.com)
  *
@@ -20,7 +20,6 @@ contract EBTCToken is mortal { /* ERC20 compliant */
     string public  m_name;
     uint8 public m_decimals;
     uint public m_total_supply;
-    address public m_issuer; /* Issuer of fresh tokens - Stride Eth Contract in this case */
 
     mapping(address => uint) balances;
     mapping(address => mapping(address => uint)) allowed;
@@ -28,19 +27,12 @@ contract EBTCToken is mortal { /* ERC20 compliant */
     event Transfer(address indexed from, address indexed to, uint tokens);
     event Approval(address indexed tokenOwner, address indexed spender, 
                    uint tokens);
-    event Issued(uint tokens);
 
-    constructor() public {  /* Constructor */
+    constructor(uint tokens) public {  /* Constructor */
         m_symbol = "EBTC";
         m_name = "Stride Ethereum Bitcoin Token";
         m_decimals = 18;
-        m_total_supply =  0;  /* Issue fresh tokens only when needed */
-        m_issuer = 0x0; /* Set by function below */ 
-    }
-
-    function setIssuer (address issuer) public {
-        require(msg.sender == m_owner);
-        m_issuer = issuer; 
+        m_total_supply = tokens;  /* Fixed supply */ 
     }
 
     function balanceOf(address tokenOwner) public constant returns (
@@ -75,13 +67,11 @@ contract EBTCToken is mortal { /* ERC20 compliant */
                        returns (uint remaining) {
         return allowed[tokenOwner][spender];
     }
- 
-    function issueFreshTokens(address to, uint tokens) public 
-                              returns (bool success) {
-        require(msg.sender == m_issuer, "Only issuer can issue fresh tokens");     
-        balances[to] = balances[to].add(tokens);
-        m_total_supply = m_total_supply.add(tokens);
-        emit Issued(tokens);
+
+    function burn(address from, uint tokens) public returns (bool success) {
+        balances[from] = balances[from].sub(tokens);
+        m_total_supply = m_total_supply.sub(tokens); 
         return true;
-    }
+    } 
+ 
 }
