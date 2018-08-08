@@ -29,7 +29,7 @@ class ChainConfig:
         self.dest_addr = None  # Destnation address if applicable
 
 rsk = ChainConfig('RSKTestnet')
-rsk.contract_addr = '0xFA834D5668E9e80CF173A6740c256eF5eB9679a1'
+rsk.contract_addr = ''
 rsk.contract_name = 'StrideRSKContract'
 rsk.contract_path = '/home/puneet/crypto/stride/contracts/target'
 rsk.gas = 2500000
@@ -46,7 +46,7 @@ rsk.dest_addr = '0x8518266aCAe14073776De8371153A3389265d955'
 rsk.contract_owner = '0x36E7CDF091cbFA3a86611017e813432D98dFD969' 
 
 eth = ChainConfig('ETHRopsten')
-eth.contract_addr = '0xD1CE1394173eF6601a4BB4634AF6702473A45749'
+eth.contract_addr = ''
 eth.contract_name = 'StrideEthContract'
 eth.contract_path = '/home/puneet/crypto/stride/contracts/target'
 eth.token_contract_name = 'EBTCToken'
@@ -58,6 +58,6 @@ eth.user = '0x9d465C631F1D8E47B6113Ab204a9410183fcCE05'
 eth.custodian = '0xadEd5F0Cfd12122F98c450a94a382f0BA7CA65eD'
 eth.contract_owner = '0x9d465C631F1D8E47B6113Ab204a9410183fcCE05' 
 eth.dest_addr = '' # NA. EBTC is issued to User's Eth address as part of Swap
-eth.token_addr = '0xE6cE9BA4F6F112202aCC359887E20466fC31Ab3F' # EBTC
+eth.token_addr = '' # EBTC
 
 
