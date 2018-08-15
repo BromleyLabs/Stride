@@ -81,7 +81,7 @@ contract StrideRSKContract is mortal {
     }  
 
     /**
-     * @ dev we don't want any SBTCs into this contract transfered via any
+     * @dev we don't want any SBTCs into this contract transfered via any
      * transaction other than the deposit_collateral() method 
      */
      function () public payable { 
